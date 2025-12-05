@@ -1,46 +1,50 @@
-// lib/my_button.dart
 import 'package:flutter/material.dart';
 
 class MyButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
-  final Color backgroundColor;
-  final Color foregroundColor;
-  
+  final bool showArrow;
+
   const MyButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
-    // Custom colors matching the design's green palette
-    this.backgroundColor = const Color(0xFF6A994E), 
-    this.foregroundColor = Colors.white,
-  }) : super(key: key);
+    this.showArrow = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 48,
+      width: double.infinity,
+      height: 55,
       child: ElevatedButton(
-        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          foregroundColor: foregroundColor,
+          backgroundColor: const Color(0xFF47734D),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.0),
+            borderRadius: BorderRadius.circular(30),
           ),
-          elevation: 0,
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+        onPressed: onPressed,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              text,
+              style: const TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+              ),
             ),
-          ),
+
+            if (showArrow) ...[
+              const SizedBox(width: 10),
+              const Icon(Icons.arrow_forward, color: Colors.white),
+            ],
+          ],
         ),
       ),
     );
   }
 }
+
+

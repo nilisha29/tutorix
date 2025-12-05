@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'package:tutorix/screens/onboarding_screen.dart';
+
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    // Auto navigate to onboarding after 2 seconds
+ 
     Future.delayed(const Duration(seconds: 2), () {
       Navigator.pushReplacement(
         context,
