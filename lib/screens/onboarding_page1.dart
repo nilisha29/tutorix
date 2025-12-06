@@ -20,7 +20,7 @@ class OnboardingPage1 extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Skip button
+             
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -34,7 +34,7 @@ class OnboardingPage1 extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              // Title
+            
               const Text(
                 "Welcome",
                 style: TextStyle(
@@ -56,7 +56,7 @@ class OnboardingPage1 extends StatelessWidget {
 
               const SizedBox(height: 40),
 
-              // Image
+         
               Center(
                 child: Image.asset(
                   'assets/images/on1.png',
@@ -66,7 +66,7 @@ class OnboardingPage1 extends StatelessWidget {
 
               const Spacer(),
 
-              // BUTTON — bottom right
+            
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
@@ -88,7 +88,7 @@ class OnboardingPage1 extends StatelessWidget {
 
               const SizedBox(height: 100),
 
-              // Indicators at bottom center
+             
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/my_button.dart';
-import 'login_screen.dart';   // ← ADD THIS IMPORT
+import 'login_screen.dart';   
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -18,7 +18,7 @@ class RegisterScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // TITLE
+           
               Center(
                 child: Column(
                   children: [
@@ -44,7 +44,7 @@ class RegisterScreen extends StatelessWidget {
 
               const SizedBox(height: 25),
 
-              // PROFILE IMAGE
+          
               Center(
                 child: Column(
                   children: [
@@ -66,7 +66,7 @@ class RegisterScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // FIRST & LAST NAME
+            
               Row(
                 children: const [
                   Expanded(
@@ -109,7 +109,7 @@ class RegisterScreen extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // TERMS CHECKBOX
+         
               Row(
                 children: [
                   Checkbox(
@@ -130,7 +130,7 @@ class RegisterScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // CREATE BUTTON → GO TO LOGIN SCREEN
+            
               MyButton(
                 text: "Create",
                 showArrow: true,

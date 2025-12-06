@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/my_button.dart';
-import 'home_screen.dart';          // ⬅ Import HomeScreen
-import 'register_screen.dart';     // ⬅ Import RegisterScreen
+import 'home_screen.dart';          
+import 'register_screen.dart';    
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -76,7 +76,7 @@ class LoginScreen extends StatelessWidget {
 
               const SizedBox(height: 50),
 
-              // SIGN-IN BUTTON → HOME SCREEN
+             
               MyButton(
                 text: "Sign in",
                 showArrow: true,
@@ -90,7 +90,7 @@ class LoginScreen extends StatelessWidget {
 
               const SizedBox(height: 30),
 
-              // GOOGLE SIGN-IN
+            
               Container(
                 height: 55,
                 decoration: BoxDecoration(
@@ -112,7 +112,7 @@ class LoginScreen extends StatelessWidget {
 
               const SizedBox(height: 15),
 
-              // CREATE ACCOUNT → REGISTER SCREEN
+             
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

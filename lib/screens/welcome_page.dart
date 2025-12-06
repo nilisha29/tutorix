@@ -9,7 +9,7 @@ class WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFD8F2D8), // light mint green like image
+      backgroundColor: const Color(0xFFD8F2D8),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -17,16 +17,16 @@ class WelcomePage extends StatelessWidget {
 
             const SizedBox(height: 40),
 
-            // LOGO
+         
             Image.asset(
-              "assets/images/splashscreenlogo.png", // your tutorix logo
+              "assets/images/splashscreenlogo.png", 
               height: 300,
               width: 500
             ),
 
             const SizedBox(height: 10),
 
-            // SIGN IN BUTTON
+        
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -39,7 +39,7 @@ class WelcomePage extends StatelessWidget {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3F6B4F), // dark green
+                    backgroundColor: const Color(0xFF3F6B4F), 
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(35),
                     ),
@@ -60,7 +60,7 @@ class WelcomePage extends StatelessWidget {
 
             const SizedBox(height: 25),
 
-            // REGISTER BUTTON
+      
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -101,7 +101,7 @@ class WelcomePage extends StatelessWidget {
 
             const SizedBox(height: 80),
 
-            // TERMS TEXT
+         
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text.rich(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class OnboardingPage2 extends StatelessWidget {
   final VoidCallback onSkip;
-  final VoidCallback onNext; // even if not used, needed for PageView logic
+  final VoidCallback onNext; 
 
   const OnboardingPage2({
     super.key,
@@ -19,7 +19,7 @@ class OnboardingPage2 extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
-              // Skip
+             
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -33,7 +33,7 @@ class OnboardingPage2 extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // Image
+             
               Image.asset(
                 'assets/images/on2.png',
                 height: 250,

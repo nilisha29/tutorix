@@ -19,7 +19,7 @@ class OnboardingPage3 extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
-              // Skip
+             
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -33,7 +33,7 @@ class OnboardingPage3 extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // Image
+           
               Image.asset(
                 'assets/images/on3.png',
                 height: 250,
@@ -60,7 +60,7 @@ class OnboardingPage3 extends StatelessWidget {
 
               const SizedBox(height: 100),
 
-              // Continue button (RIGHT SIDE)
+      
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
