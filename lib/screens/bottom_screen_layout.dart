@@ -24,9 +24,9 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Bottom Screen Layout")
+      // appBar: AppBar(title: Text("Bottom Screen Layout")
       //  centerTitle: true,
-      ),
+      // ),
       body: lstBottomScreen[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -48,7 +48,7 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
             label: 'Profile',
           ),
         ],
-        backgroundColor: Colors.lightBlue,
+        backgroundColor: Colors.blueGrey,
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.black,
         currentIndex: _selectedIndex,
