@@ -31,7 +31,7 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              // ================= TOP BAR =================
+              // ================= TOP BAR 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -53,7 +53,7 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ================= GREETING =================
+              // ================= GREETING 
               const Text(
                 "Hello, Sophia!",
                 style: TextStyle(fontSize: 14, color: Colors.black54),
@@ -71,7 +71,7 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // ================= CATEGORY =================
+              // ================= CATEGORY 
               SizedBox(
                 height: 50,
                 child: ListView(
@@ -87,7 +87,7 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // ================= TOP TUTORS =================
+              // ================= TOP TUTORS 
               const Text(
                 "Top Tutors",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -109,7 +109,7 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // ================= RECOMMENDED =================
+              // ================= RECOMMENDED 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
@@ -139,7 +139,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ================= CATEGORY CHIP =================
+  // ================= CATEGORY CHIP 
   Widget categoryChip(String title, bool active) {
     return Container(
       margin: const EdgeInsets.only(right: 12),
@@ -158,7 +158,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ================= TUTOR CARD =================
+  // ================= TUTOR CARD 
   Widget tutorCard(String name, String subject, String rating) {
     return Container(
       width: 160,
@@ -198,7 +198,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ================= RECOMMENDED CARD =================
+  // ================= RECOMMENDED CARD 
   Widget recommendedCard(String name, String subject) {
     return Container(
       padding: const EdgeInsets.all(12),
