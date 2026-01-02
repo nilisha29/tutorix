@@ -76,7 +76,7 @@ class LoginPage extends StatelessWidget {
                 text: "Sign in",
                 showArrow: true,
                 onPressed: () {
-                  // 🔐 TODO: Sprint 3: Call AuthViewModel.login() using Hive
+              
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
