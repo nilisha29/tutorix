@@ -7,6 +7,8 @@ import 'package:tutorix/features/auth/data/repositories/auth_repository.dart';
 import 'package:tutorix/features/auth/domain/entities/auth_entity.dart';
 import 'package:tutorix/features/auth/domain/repositories/auth_repository.dart';
 
+import '../entities/auth_entity.dart';
+
 /// Params for login usecase
 class LoginUsecaseParams extends Equatable {
   final String email;

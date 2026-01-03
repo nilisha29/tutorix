@@ -4,20 +4,20 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tutorix/core/constants/hive_table_constant.dart';
 import 'package:tutorix/features/auth/data/models/auth_hive_model.dart';
 
-/// Riverpod provider for HiveService
+
 final hiveServiceProvider = Provider<HiveService>((ref) {
   return HiveService();
 });
 
 class HiveService {
-  /// Initialize Hive
+
   Future<void> init() async {
     await Hive.initFlutter();
     _registerAdapters();
     await _openBoxes();
   }
 
-  /// Register all Hive adapters
+
   void _registerAdapters() {
     if (!Hive.isAdapterRegistered(HiveTableConstant.authTypeId)) {
       Hive.registerAdapter(AuthHiveModelAdapter());
