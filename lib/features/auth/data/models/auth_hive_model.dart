@@ -37,7 +37,7 @@ class AuthHiveModel extends HiveObject {
     this.profilePicture,
   });
 
-  /// Convert Hive model to domain entity
+
   AuthEntity toEntity() {
     return AuthEntity(
       authId: authId,
