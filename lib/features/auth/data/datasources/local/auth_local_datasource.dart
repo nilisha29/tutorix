@@ -4,7 +4,6 @@ import 'package:tutorix/features/auth/data/datasources/auth_datasource.dart';
 import 'package:tutorix/features/auth/data/models/auth_hive_model.dart';
 
 
-/// Provider for AuthLocalDatasource
 final authLocalDatasourceProvider = Provider<AuthLocalDatasource>((ref) {
   final hiveService = ref.watch(hiveServiceProvider);
   return AuthLocalDatasource(hiveService: hiveService);
@@ -16,11 +15,10 @@ class AuthLocalDatasource implements IAuthDatasource {
   AuthLocalDatasource({required HiveService hiveService})
       : _hiveService = hiveService;
 
-  /// Get the currently logged-in user (optional session management)
+
   @override
   Future<AuthHiveModel?> getCurrentUser() async {
-    // TODO: implement session handling if needed
-    return null;
+    // TODO: implement session handling if needed return null;
   }
 
   /// Login with email and password
