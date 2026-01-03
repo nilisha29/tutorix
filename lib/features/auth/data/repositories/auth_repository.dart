@@ -48,7 +48,7 @@ class AuthRepository implements IAuthRepository {
     }
   }
 
-  /// Logout user
+
   @override
   Future<Either<Failure, bool>> logout() async {
     try {
