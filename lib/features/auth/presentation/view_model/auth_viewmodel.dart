@@ -27,9 +27,7 @@ class AuthViewmodel extends Notifier<AuthState> {
     return const AuthState();
   }
 
-  // --------------------
-  // Register
-  // --------------------
+ 
   Future<void> register({
     required String fullName,
     required String email,
