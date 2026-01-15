@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 class MyButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool showArrow;
 
   const MyButton({
     super.key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
     this.showArrow = false,
   });
 

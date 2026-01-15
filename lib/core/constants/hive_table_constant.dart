@@ -9,5 +9,8 @@ class HiveTableConstant {
   static const int authTypeId = 0;
   static const String authTable = "auth_table";
 
+  // Session box for persisting current logged in user id
+  static const String sessionBox = "session_box";
+  static const String currentAuthKey = "current_auth_id";
 
 }

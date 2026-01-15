@@ -18,7 +18,13 @@ class AuthLocalDatasource implements IAuthDatasource {
 
   @override
   Future<AuthHiveModel?> getCurrentUser() async {
-    // TODO: implement session handling if needed return null;
+    try {
+      final authId = _hiveService.getCurrentAuthId();
+      if (authId == null) return null;
+      return _hiveService.getCurrentUser(authId);
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Login with email and password
@@ -26,6 +32,9 @@ class AuthLocalDatasource implements IAuthDatasource {
   Future<AuthHiveModel?> login(String email, String password) async {
     try {
       final user = await _hiveService.loginUser(email, password);
+      if (user != null && user.authId != null) {
+        await _hiveService.setCurrentAuthId(user.authId!);
+      }
       return user;
     } catch (e) {
       return null;

@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/features/auth/presentation/pages/register_page.dart';
+import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/bottom_screen_layout.dart';
 import 'package:tutorix/core/widgets/custom_text_field.dart';
 import 'package:tutorix/core/widgets/my_button.dart';
+import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
+import 'package:tutorix/core/utils/snackbar_utils.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  ConsumerState<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends ConsumerState<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,9 +34,15 @@ class LoginPage extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
               const SizedBox(height: 40),
 
               /// Logo & Greeting
@@ -51,14 +77,17 @@ class LoginPage extends StatelessWidget {
               const SizedBox(height: 25),
 
               /// Email & Password
-              const CustomTextField(
+              CustomTextField(
                 hint: "E-mail",
                 icon: Icons.email_outlined,
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
               ),
-              const CustomTextField(
+              CustomTextField(
                 hint: "Password",
                 icon: Icons.lock_outline,
                 obscure: true,
+                controller: _passwordController,
               ),
 
               Align(
@@ -73,17 +102,39 @@ class LoginPage extends StatelessWidget {
 
               /// Sign In Button
               MyButton(
-                text: "Sign in",
+                text: _isLoading ? 'Signing in...' : "Sign in",
                 showArrow: true,
-                onPressed: () {
-              
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BottomScreenLayout(),
-                    ),
-                  );
-                },
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        final email = _emailController.text.trim();
+                        final password = _passwordController.text;
+
+                        if (email.isEmpty || password.isEmpty) {
+                          SnackbarUtils.showError(context, 'Please enter email and password');
+                          return;
+                        }
+
+                        setState(() => _isLoading = true);
+                        await ref.read(authViewmodelProvider.notifier).login(
+                              email: email,
+                              password: password,
+                            );
+
+                        final state = ref.read(authViewmodelProvider);
+                        setState(() => _isLoading = false);
+
+                        if (state.status == AuthStatus.authenticated) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const BottomScreenLayout(),
+                            ),
+                          );
+                        } else {
+                          SnackbarUtils.showError(context, state.errorMessage ?? 'Invalid credentials');
+                        }
+                      },
               ),
 
               const SizedBox(height: 30),
@@ -139,6 +190,10 @@ class LoginPage extends StatelessWidget {
                 ],
               )
             ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),

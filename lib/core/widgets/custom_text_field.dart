@@ -4,12 +4,16 @@ class CustomTextField extends StatelessWidget {
   final String hint;
   final IconData icon;
   final bool obscure;
+  final TextEditingController? controller;
+  final TextInputType? keyboardType;
 
   const CustomTextField({
     super.key,
     required this.hint,
     required this.icon,
     this.obscure = false,
+    this.controller,
+    this.keyboardType,
   });
 
   @override
@@ -28,6 +32,8 @@ class CustomTextField extends StatelessWidget {
         ],
       ),
       child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
         obscureText: obscure,
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: Colors.grey.shade600),

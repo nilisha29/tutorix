@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tutorix/screens/bottom_screen_layout.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/my_button.dart';
-import 'home_screen.dart';          
+import 'package:tutorix/core/widgets/custom_text_field.dart';
+import 'package:tutorix/core/widgets/my_button.dart';
 import 'register_screen.dart';    
 
 class LoginScreen extends StatelessWidget {

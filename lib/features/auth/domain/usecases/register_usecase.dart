@@ -47,6 +47,7 @@ class RegisterUsecase
   @override
   Future<Either<Failure, bool>> call(RegisterUsecaseParams params) async {
     final entity = AuthEntity(
+      authId: DateTime.now().millisecondsSinceEpoch.toString(),
       fullName: params.fullName,
       email: params.email,
       username: params.username,

@@ -1,3 +1,6 @@
+// Deprecated: use `lib/core/widgets/my_textformfield.dart` instead.
+// This file is left for backward compatibility and will be removed in a later cleanup.
+
 import 'package:flutter/material.dart';
 
 class MyTextformfield extends StatelessWidget {

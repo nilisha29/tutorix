@@ -1,14 +1,17 @@
+// Deprecated: use `lib/core/widgets/my_button.dart` instead.
+// This file is left for backward compatibility and will be removed in a later cleanup.
+
 import 'package:flutter/material.dart';
 
 class MyButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool showArrow;
 
   const MyButton({
     super.key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
     this.showArrow = false,
   });
 

@@ -1,10 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/widgets/custom_text_field.dart';
 import 'package:tutorix/core/widgets/my_button.dart';
+import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
+import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
+import 'package:tutorix/core/utils/snackbar_utils.dart';
 import 'login_page.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
+
+  @override
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends ConsumerState<RegisterPage> {
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController();
+
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,18 +96,20 @@ class RegisterPage extends StatelessWidget {
 
               /// Name Fields
               Row(
-                children: const [
+                children: [
                   Expanded(
                     child: CustomTextField(
                       hint: "First name",
                       icon: Icons.person_outline,
+                      controller: _firstNameController,
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: CustomTextField(
                       hint: "Last name",
                       icon: Icons.person_outline,
+                      controller: _lastNameController,
                     ),
                   ),
                 ],
@@ -88,26 +117,23 @@ class RegisterPage extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              const CustomTextField(
+              CustomTextField(
                 hint: "E-mail",
                 icon: Icons.email_outlined,
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
               ),
-              const CustomTextField(
+              CustomTextField(
                 hint: "Password",
                 icon: Icons.lock_outline,
                 obscure: true,
+                controller: _passwordController,
               ),
-              const CustomTextField(
+              CustomTextField(
                 hint: "Phone Number",
                 icon: Icons.phone,
-              ),
-              const CustomTextField(
-                hint: "Age",
-                icon: Icons.calendar_month,
-              ),
-              const CustomTextField(
-                hint: "Address",
-                icon: Icons.location_on_outlined,
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
               ),
 
               const SizedBox(height: 10),
@@ -133,16 +159,43 @@ class RegisterPage extends StatelessWidget {
 
               /// Create Button
               MyButton(
-                text: "Create",
+                text: _isLoading ? "Creating..." : "Create",
                 showArrow: true,
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LoginPage(),
-                    ),
-                  );
-                },
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        final fullName = '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim();
+                        final email = _emailController.text.trim();
+                        final password = _passwordController.text;
+                        final phone = _phoneController.text.trim();
+
+                        if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
+                          SnackbarUtils.showError(context, 'Please fill required fields');
+                          return;
+                        }
+
+                        setState(() => _isLoading = true);
+                        await ref.read(authViewmodelProvider.notifier).register(
+                              fullName: fullName,
+                              email: email,
+                              phoneNumber: phone.isEmpty ? null : phone,
+                              username: email.split('@').first,
+                              password: password,
+                            );
+
+                        final state = ref.read(authViewmodelProvider);
+                        setState(() => _isLoading = false);
+
+                        if (state.status == AuthStatus.registered) {
+                          SnackbarUtils.showSuccess(context, 'Registered successfully');
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginPage()),
+                          );
+                        } else {
+                          SnackbarUtils.showError(context, state.errorMessage ?? 'Registration failed');
+                        }
+                      },
               ),
 
               const SizedBox(height: 30),

@@ -27,6 +27,7 @@ class HiveService {
   /// Open all Hive boxes
   Future<void> _openBoxes() async {
     await Hive.openBox<AuthHiveModel>(HiveTableConstant.authTable);
+    await Hive.openBox<String>(HiveTableConstant.sessionBox);
   }
 
   /// Close all boxes
@@ -39,6 +40,25 @@ class HiveService {
   /// Private getter for auth box
   Box<AuthHiveModel> get _authBox =>
       Hive.box<AuthHiveModel>(HiveTableConstant.authTable);
+
+  /// Private getter for session box
+  Box<String> get _sessionBox =>
+      Hive.box<String>(HiveTableConstant.sessionBox);
+
+  /// Set current auth id in session box
+  Future<void> setCurrentAuthId(String authId) async {
+    await _sessionBox.put(HiveTableConstant.currentAuthKey, authId);
+  }
+
+  /// Get current auth id
+  String? getCurrentAuthId() {
+    return _sessionBox.get(HiveTableConstant.currentAuthKey);
+  }
+
+  /// Clear current auth id
+  Future<void> clearCurrentAuthId() async {
+    await _sessionBox.delete(HiveTableConstant.currentAuthKey);
+  }
 
   /// Register a new user
   Future<AuthHiveModel> registerUser(AuthHiveModel model) async {
@@ -54,9 +74,9 @@ class HiveService {
     return users.isNotEmpty ? users.first : null;
   }
 
-  /// Logout user (optional: handle session clearing)
+  /// Logout user (clear session)
   Future<void> logoutUser() async {
-    // Example: clear a current session box if implemented
+    await clearCurrentAuthId();
   }
 
   /// Get current user by authId
