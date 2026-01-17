@@ -12,6 +12,7 @@ class SnackbarUtils {
     );
   }
 
+
   static void showSuccess(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
