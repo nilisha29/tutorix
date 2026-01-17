@@ -11,6 +11,7 @@ class StorageService {
       
   String? getString(String key) => _prefs.getString(key);
 
+
   // Int
   Future<bool> setInt(String key, int value) => _prefs.setInt(key, value);
   int? getInt(String key) => _prefs.getInt(key);
