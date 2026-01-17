@@ -21,6 +21,7 @@ class LoginUsecaseParams extends Equatable {
   List<Object?> get props => [email, password];
 }
 
+
 /// Provider for login usecase
 final loginUsecaseProvider = Provider<LoginUsecase>((ref) {
   final authRepository = ref.read(authRepositoryProvider);
