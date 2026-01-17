@@ -52,38 +52,36 @@ class AuthViewModel extends Notifier<AuthState> {
     );
   }
 
-  /// LOGIN
-  Future<void> login({
-    required String username,
-    required String password,
-  }) async {
-    state = state.copyWith(status: AuthStatus.loading);
+ Future<void> login({
+  required String username,
+  required String password,
+}) async {
+  print('[DEBUG] login() called with $username'); // ✅ start
+  state = state.copyWith(status: AuthStatus.loading);
 
-    final params = LoginUsecaseParams(email: username, password: password);
+  final params = LoginUsecaseParams(email: username, password: password);
+  final result = await _loginUsecase.call(params);
 
-    final result = await _loginUsecase.call(params);
+  print('[DEBUG] login() result: $result'); // ✅ after API call
 
-    result.fold(
-      (failure) {
-        state = state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: failure.message,
-        );
-      },
-      (authEntity) {
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          authEntity: authEntity,
-        );
-      },
-    );
-  }
+  result.fold(
+    (failure) {
+      print('[DEBUG] login() failure: ${failure.message}'); // ✅ failure
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: failure.message,
+      );
+    },
+    (authEntity) {
+      print('[DEBUG] login() success: ${authEntity.email}'); // ✅ success
+      state = state.copyWith(
+        status: AuthStatus.authenticated,
+        authEntity: authEntity,
+      );
+    },
+  );
 }
-
-
-
-
-
+}
 
 
 

@@ -2,7 +2,9 @@ class ApiEndpoints {
   ApiEndpoints._();
 
   // Base URL - change this for production
-  static const String baseUrl = 'http://10.0.2.2:3000/api/v1';
+  // static const String baseUrl = 'http://10.0.2.2:3000/api/auth';
+  static const String baseUrl = 'http://10.0.2.2:5000/api'; // Android emulator
+
   //static const String baseUrl = 'http://localhost:3000/api/v1';
   // For Android Emulator use: 'http://10.0.2.2:3000/api/v1'
   // For iOS Simulator use: 'http://localhost:5000/api/v1'
@@ -21,8 +23,8 @@ class ApiEndpoints {
 
   // ============ Student Endpoints ============
   static const String students = '/students';
-  static const String studentLogin = '/students/login';
-  static const String studentRegister = '/students/register';
+  static const String studentLogin = '/auth/login';
+  static const String studentRegister = '/auth/register';
   static String studentById(String id) => '/students/$id';
   static String studentPhoto(String id) => '/students/$id/photo';
 

@@ -52,47 +52,84 @@ class AuthRepository implements IAuthRepository {
   }
 
   /// Login user using API
-  @override
-  Future<Either<Failure, AuthEntity>> login(
-      String email, String password) async {
-    try {
-      // Call remote API for login
-      final apiResponse = await _remoteDataSource.login(email, password);
+  // @override
+  // Future<Either<Failure, AuthEntity>> login(
+  //     String email, String password) async {
+  //   try {
+  //     // Call remote API for login
+  //     final apiResponse = await _remoteDataSource.login(email, password);
       
-      print('[DEBUG] Login API Response: $apiResponse');
+  //     print('[DEBUG] Login API Response: $apiResponse');
       
-      // Check if login was successful - handle both response formats
-      final hasData = apiResponse['data'] != null;
-      final isSuccessful = apiResponse['success'] == true || hasData;
+  //     // Check if login was successful - handle both response formats
+  //     final hasData = apiResponse['data'] != null;
+  //     final isSuccessful = apiResponse['success'] == true || hasData;
       
-      print('[DEBUG] hasData: $hasData, isSuccessful: $isSuccessful');
+  //     print('[DEBUG] hasData: $hasData, isSuccessful: $isSuccessful');
       
-      if (isSuccessful && hasData) {
-        final userData = apiResponse['data'];
+  //     if (isSuccessful && hasData) {
+  //       final userData = apiResponse['data'];
         
-        // Save to local storage
-        final hiveModel = AuthHiveModel(
-          authId: userData['id'] ?? userData['_id'] ?? '',
-          firstName: userData['firstName'] ?? '',
-          email: userData['email'] ?? email,
-          phoneNumber: userData['phoneNumber'],
-          lastName: userData['lastName'] ?? '',
-          profilePicture: userData['profilePicture'],
-          password: password,
-          token: userData['token'] ?? '',
-        );
+  //       // Save to local storage
+  //       final hiveModel = AuthHiveModel(
+  //         authId: userData['id'] ?? userData['_id'] ?? '',
+  //         firstName: userData['firstName'] ?? '',
+  //         email: userData['email'] ?? email,
+  //         phoneNumber: userData['phoneNumber'],
+  //         lastName: userData['lastName'] ?? '',
+  //         profilePicture: userData['profilePicture'],
+  //         password: password,
+  //         token: userData['token'] ?? '',
+  //       );
         
-        await _localDataSource.login(email, password);
-        print('[DEBUG] Login successful, saved to local storage');
-        return Right(hiveModel.toEntity());
-      }
+  //       await _localDataSource.login(email, password);
+  //       print('[DEBUG] Login successful, saved to local storage');
+  //       return Right(hiveModel.toEntity());
+  //     }
       
-      return Left(ApiFailure(message: apiResponse['message'] ?? 'Login failed'));
-    } catch (e) {
-      print('[DEBUG] Login error: $e');
-      return Left(ApiFailure(message: e.toString()));
-    }
+  //     return Left(ApiFailure(message: apiResponse['message'] ?? 'Login failed'));
+  //   } catch (e) {
+  //     print('[DEBUG] Login error: $e');
+  //     return Left(ApiFailure(message: e.toString()));
+  //   }
+  // }
+
+
+@override
+Future<Either<Failure, AuthEntity>> login(
+    String email, String password) async {
+  try {
+    final apiResponse = await _remoteDataSource.login(email, password);
+
+    print('[DEBUG] Login API Response: $apiResponse');
+
+    // ✅ BACKEND DOES NOT WRAP RESPONSE IN `data`
+    // So treat entire response as user object
+
+    final localUser = await _localDataSource.login(email, password);
+print('[DEBUG] Local Storage Result: $localUser');
+    final userData = apiResponse;
+
+    final hiveModel = AuthHiveModel(
+      authId: userData['id']?.toString() ?? '',
+      firstName: userData['firstName'] ?? '',
+      lastName: userData['lastName'] ?? '',
+      email: userData['email'] ?? email,
+      phoneNumber: userData['phoneNumber'],
+      profilePicture: userData['profilePicture'],
+      token: userData['token'] ?? '',
+      password: password,
+    );
+
+    await _localDataSource.login(email, password);
+
+    return Right(hiveModel.toEntity());
+  } catch (e) {
+    return Left(ApiFailure(message: e.toString()));
   }
+}
+
+
 
   /// Register a new user using API
   @override
