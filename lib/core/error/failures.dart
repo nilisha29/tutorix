@@ -29,6 +29,7 @@ class ApiFailure extends Failure {
   List<Object?> get props => [message, statusCode];
 }
 
+
 /// Failure for network issues
 class NetworkFailure extends Failure {
   const NetworkFailure({
