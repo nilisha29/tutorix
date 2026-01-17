@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tutorix/core/constants/hive_table_constant.dart';
 import 'package:tutorix/features/auth/data/models/auth_hive_model.dart';

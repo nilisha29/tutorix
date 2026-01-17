@@ -15,6 +15,7 @@ class RegisterPage extends ConsumerStatefulWidget {
 }
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
+  final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -22,6 +23,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _phoneController = TextEditingController();
 
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _agreedToTerms = false;
 
   @override
   void dispose() {
@@ -33,176 +36,194 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     super.dispose();
   }
 
+  Future<void> _handleSignup() async {
+    if (!_agreedToTerms) {
+      SnackbarUtils.showError(context, 'Please agree to the Terms & Conditions');
+      return;
+    }
+
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
+      await ref.read(authViewModelProvider.notifier).register(
+            firstName: _firstNameController.text.trim(),
+            lastName: _lastNameController.text.trim(),
+            email: _emailController.text.trim(),
+            username: _emailController.text.split('@').first,
+            password: _passwordController.text,
+            phoneNumber:
+                _phoneController.text.isNotEmpty ? _phoneController.text : null,
+          );
+
+      final state = ref.read(authViewModelProvider);
+      setState(() => _isLoading = false);
+
+      if (state.status == AuthStatus.registered) {
+        SnackbarUtils.showSuccess(context, 'Registration Successful');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+      } else if (state.status == AuthStatus.error) {
+        SnackbarUtils.showError(
+            context, state.errorMessage ?? 'Registration failed');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authViewModelProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFD9F2D5),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
 
-              /// Title
-              Column(
-                children: const [
-                  Text(
-                    "Create Account",
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                /// Title
+                Column(
+                  children: const [
+                    Text(
+                      "Create Account",
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    "Personal Information",
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.black,
+                    SizedBox(height: 6),
+                    Text(
+                      "Personal Information",
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.black,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
 
-              const SizedBox(height: 25),
+                const SizedBox(height: 25),
 
-              /// Profile Image
-              Column(
-                children: [
-                  const CircleAvatar(
-                    radius: 45,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 55,
-                      color: Colors.grey,
+                /// Profile Image
+                Column(
+                  children: [
+                    const CircleAvatar(
+                      radius: 45,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.person,
+                        size: 55,
+                        color: Colors.grey,
+                      ),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      // TODO: Pick image later
-                    },
-                    child: const Text(
-                      "Upload your picture",
-                      style: TextStyle(color: Colors.black),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text(
+                        "Upload your picture",
+                        style: TextStyle(color: Colors.black),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              /// Name Fields
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomTextField(
-                      hint: "First name",
-                      icon: Icons.person_outline,
-                      controller: _firstNameController,
+                /// Name Fields
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomTextField(
+                        hint: "First name",
+                        icon: Icons.person_outline,
+                        controller: _firstNameController,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Required' : null,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: CustomTextField(
-                      hint: "Last name",
-                      icon: Icons.person_outline,
-                      controller: _lastNameController,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomTextField(
+                        hint: "Last name",
+                        icon: Icons.person_outline,
+                        controller: _lastNameController,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Required' : null,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              CustomTextField(
-                hint: "E-mail",
-                icon: Icons.email_outlined,
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              CustomTextField(
-                hint: "Password",
-                icon: Icons.lock_outline,
-                obscure: true,
-                controller: _passwordController,
-              ),
-              CustomTextField(
-                hint: "Phone Number",
-                icon: Icons.phone,
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-              ),
+                CustomTextField(
+                  hint: "E-mail",
+                  icon: Icons.email_outlined,
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Required';
+                    if (!v.contains('@')) return 'Invalid email';
+                    return null;
+                  },
+                ),
+                CustomTextField(
+                  hint: "Password",
+                  icon: Icons.lock_outline,
+                  obscure: true,
+                  controller: _passwordController,
+                  validator: (v) =>
+                      v == null || v.length < 6 ? 'Min 6 chars' : null,
+                ),
+                CustomTextField(
+                  hint: "Phone Number",
+                  icon: Icons.phone,
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                ),
 
-              const SizedBox(height: 10),
+                const SizedBox(height: 10),
 
-              /// Terms & Conditions
-              Row(
-                children: [
-                  Checkbox(
-                    value: true,
-                    onChanged: (_) {},
-                    activeColor: Colors.blue,
-                  ),
-                  const Expanded(
-                    child: Text(
-                      "I accept the terms and privacy policy",
-                      style: TextStyle(color: Colors.black),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              /// Create Button
-              MyButton(
-                text: _isLoading ? "Creating..." : "Create",
-                showArrow: true,
-                onPressed: _isLoading
-                    ? null
-                    : () async {
-                        final fullName = '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim();
-                        final email = _emailController.text.trim();
-                        final password = _passwordController.text;
-                        final phone = _phoneController.text.trim();
-
-                        if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
-                          SnackbarUtils.showError(context, 'Please fill required fields');
-                          return;
-                        }
-
-                        setState(() => _isLoading = true);
-                        await ref.read(authViewmodelProvider.notifier).register(
-                              fullName: fullName,
-                              email: email,
-                              phoneNumber: phone.isEmpty ? null : phone,
-                              username: email.split('@').first,
-                              password: password,
-                            );
-
-                        final state = ref.read(authViewmodelProvider);
-                        setState(() => _isLoading = false);
-
-                        if (state.status == AuthStatus.registered) {
-                          SnackbarUtils.showSuccess(context, 'Registered successfully');
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LoginPage()),
-                          );
-                        } else {
-                          SnackbarUtils.showError(context, state.errorMessage ?? 'Registration failed');
-                        }
+                /// Terms & Conditions
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _agreedToTerms,
+                      onChanged: (val) {
+                        setState(() => _agreedToTerms = val ?? false);
                       },
-              ),
+                      activeColor: Colors.blue,
+                    ),
+                    const Expanded(
+                      child: Text(
+                        "I accept the terms and privacy policy",
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    ),
+                  ],
+                ),
 
-              const SizedBox(height: 30),
-            ],
+                const SizedBox(height: 20),
+
+                /// Create Button
+                MyButton(
+                  text: "Create",
+                 isLoading: authState.status == AuthStatus.loading,
+  onPressed: authState.status == AuthStatus.loading ? null : _handleSignup,
+),
+
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+

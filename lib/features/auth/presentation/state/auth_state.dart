@@ -19,6 +19,7 @@ class AuthState extends Equatable {
 
   const AuthState({
     this.status = AuthStatus.initial,
+    // this.status = AuthStatus.unauthenticated,
     this.errorMessage,
     this.authEntity,
   });

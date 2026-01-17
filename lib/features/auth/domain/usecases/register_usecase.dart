@@ -9,17 +9,17 @@ import 'package:tutorix/features/auth/domain/repositories/auth_repository.dart';
 
 /// Params for register usecase
 class RegisterUsecaseParams extends Equatable {
-  final String fullName;
+  final String firstName;
   final String email;
-  final String username;
+  final String lastName;
   final String? password;
   final String? phoneNumber;
   final String? profilePicture;
 
   const RegisterUsecaseParams({
-    required this.fullName,
+    required this.firstName,
     required this.email,
-    required this.username,
+    required this.lastName,
     this.password,
     this.phoneNumber,
     this.profilePicture,
@@ -27,7 +27,7 @@ class RegisterUsecaseParams extends Equatable {
 
   @override
   List<Object?> get props =>
-      [fullName, email, username, password, phoneNumber, profilePicture];
+      [firstName, email, lastName, password, phoneNumber, profilePicture];
 }
 
 /// Provider for RegisterUsecase
@@ -48,9 +48,10 @@ class RegisterUsecase
   Future<Either<Failure, bool>> call(RegisterUsecaseParams params) async {
     final entity = AuthEntity(
       authId: DateTime.now().millisecondsSinceEpoch.toString(),
-      fullName: params.fullName,
+      token: '', // Token can be set after registration
+      firstName: params.firstName,
       email: params.email,
-      username: params.username,
+      lastName: params.lastName,
       password: params.password,
       phoneNumber: params.phoneNumber,
       profilePicture: params.profilePicture,

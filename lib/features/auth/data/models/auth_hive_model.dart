@@ -10,7 +10,7 @@ class AuthHiveModel extends HiveObject {
   final String? authId;
 
   @HiveField(1)
-  final String fullName;
+  final String firstName;
 
   @HiveField(2)
   final String email;
@@ -19,7 +19,7 @@ class AuthHiveModel extends HiveObject {
   final String? phoneNumber;
 
   @HiveField(4)
-  final String username;
+  final String lastName;
 
   @HiveField(5)
   final String? password;
@@ -27,26 +27,31 @@ class AuthHiveModel extends HiveObject {
   @HiveField(6)
   final String? profilePicture;
 
+  @HiveField(7)
+  final String token;
+
   AuthHiveModel({
     this.authId,
-    required this.fullName,
+    required this.firstName,
     required this.email,
     this.phoneNumber,
-    required this.username,
+    required this.lastName,
     this.password,
     this.profilePicture,
+    required this.token,
   });
 
 
   AuthEntity toEntity() {
     return AuthEntity(
       authId: authId,
-      fullName: fullName,
+      firstName: firstName,
       email: email,
       phoneNumber: phoneNumber,
-      username: username,
+      lastName: lastName,
       password: password,
       profilePicture: profilePicture,
+      token: token,
     );
   }
 
@@ -54,12 +59,13 @@ class AuthHiveModel extends HiveObject {
   factory AuthHiveModel.fromEntity(AuthEntity entity) {
     return AuthHiveModel(
       authId: entity.authId,
-      fullName: entity.fullName,
+      firstName: entity.firstName,
       email: entity.email,
       phoneNumber: entity.phoneNumber,
-      username: entity.username,
+      lastName: entity.lastName,
       password: entity.password,
       profilePicture: entity.profilePicture,
+      token: entity.token,
     );
   }
 }

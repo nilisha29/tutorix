@@ -21,16 +21,16 @@ void main() async {
   final hiveService = HiveService();
   await hiveService.init();
 
-  runApp(const ProviderScope(child: App()));
-}
-
-// // Shared prefs
-//   final sharedPrefs = await SharedPreferences.getInstance();
-
-//   runApp(
-//     ProviderScope(
-//     overrides: [sharedPreferencesProvider.overrideWithValue(sharedPrefs)],
-    
-//     child: const MyApp()));
+//   runApp(const ProviderScope(child: App()));
 // }
+
+// Shared prefs
+  final sharedPrefs = await SharedPreferences.getInstance();
+
+  runApp(
+    ProviderScope(
+    overrides: [sharedPreferencesProvider.overrideWithValue(sharedPrefs)],
+    
+    child: const App()));
+}
 
