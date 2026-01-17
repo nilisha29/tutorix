@@ -73,6 +73,7 @@ class HiveService {
     return users.isNotEmpty ? users.first : null;
   }
 
+
   /// Logout user (clear session)
   Future<void> logoutUser() async {
     await clearCurrentAuthId();
