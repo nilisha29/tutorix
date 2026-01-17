@@ -27,6 +27,7 @@ class AppRoutes {
   static void pop(BuildContext context) {
     Navigator.pop(context);
   }
+  
 
   /// Pop to first route (root)
   static void popToFirst(BuildContext context) {

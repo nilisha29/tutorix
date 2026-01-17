@@ -172,6 +172,7 @@ class _AuthInterceptor extends Interceptor {
 
     handler.next(options);
   }
+  
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
