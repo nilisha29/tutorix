@@ -11,6 +11,7 @@ class AuthEntity extends Equatable {
   final String? password;        // Optional password (only for local storage)
   final String? profilePicture;  // Optional profile picture URL
 
+
   const AuthEntity({
     this.authId,
     required this.token,
