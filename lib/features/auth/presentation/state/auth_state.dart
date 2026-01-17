@@ -11,6 +11,7 @@ enum AuthStatus {
   error,            // An error occurred
 }
 
+
 /// AuthState class to hold the current authentication state
 class AuthState extends Equatable {
   final AuthStatus status;

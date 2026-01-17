@@ -71,6 +71,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
