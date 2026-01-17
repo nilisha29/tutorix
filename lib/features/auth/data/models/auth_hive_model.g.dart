@@ -27,6 +27,7 @@ class AuthHiveModelAdapter extends TypeAdapter<AuthHiveModel> {
       token: fields[7] as String,
     );
   }
+  
 
   @override
   void write(BinaryWriter writer, AuthHiveModel obj) {
