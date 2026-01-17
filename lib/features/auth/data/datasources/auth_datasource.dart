@@ -10,6 +10,7 @@ abstract interface class IAuthDatasource {
 
   /// Get the currently logged-in user (optional session management)
   Future<AuthHiveModel?> getCurrentUser();
+  
 
   /// Logout the current user
   Future<bool> logout();
