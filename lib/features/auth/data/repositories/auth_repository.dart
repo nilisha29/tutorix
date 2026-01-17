@@ -110,6 +110,7 @@ Future<Either<Failure, AuthEntity>> login(
 print('[DEBUG] Local Storage Result: $localUser');
     final userData = apiResponse;
 
+
     final hiveModel = AuthHiveModel(
       authId: userData['id']?.toString() ?? '',
       firstName: userData['firstName'] ?? '',
