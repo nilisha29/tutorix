@@ -72,6 +72,7 @@ class AuthViewModel extends Notifier<AuthState> {
         errorMessage: failure.message,
       );
     },
+    
     (authEntity) {
       print('[DEBUG] login() success: ${authEntity.email}'); // ✅ success
       state = state.copyWith(
