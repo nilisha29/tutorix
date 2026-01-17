@@ -9,6 +9,7 @@ class AuthApiModel {
   final String? batchId;
   final String? profilePicture;
 
+
   AuthApiModel({
     this.id,
     required this.firstName,
