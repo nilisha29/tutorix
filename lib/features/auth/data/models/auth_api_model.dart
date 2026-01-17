@@ -10,6 +10,7 @@ class AuthApiModel {
   final String? profilePicture;
 
 
+
   AuthApiModel({
     this.id,
     required this.firstName,
