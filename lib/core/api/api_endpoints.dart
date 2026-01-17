@@ -13,6 +13,7 @@ class ApiEndpoints {
   static const Duration connectionTimeout = Duration(seconds: 60);
   static const Duration receiveTimeout = Duration(seconds: 60);
 
+
   // ============ Batch Endpoints ============
   static const String batches = '/batches';
   static String batchById(String id) => '/batches/$id';
