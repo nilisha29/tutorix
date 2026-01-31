@@ -12,6 +12,7 @@ import 'package:tutorix/core/widgets/my_button.dart';
 // ---------------- MOCKS ----------------
 class MockRegisterUsecase extends Mock implements RegisterUsecase {}
 
+
 void main() {
   late MockRegisterUsecase mockRegisterUsecase;
 
