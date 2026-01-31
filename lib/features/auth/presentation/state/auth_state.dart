@@ -42,6 +42,8 @@
 //   List<Object?> get props => [status, errorMessage, authEntity];
 // }
 
+
+
 import 'package:equatable/equatable.dart';
 import 'package:tutorix/features/auth/domain/entities/auth_entity.dart';
 
