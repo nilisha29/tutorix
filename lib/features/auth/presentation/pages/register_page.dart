@@ -1576,7 +1576,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       backgroundColor: const Color(0xFFD9F2D5),
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(),
+          // physics: const NeverScrollableScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
@@ -1705,6 +1706,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 Row(
                   children: [
                     Checkbox(
+
                       value: _agreedToTerms,
                       onChanged: (v) =>
                           setState(() => _agreedToTerms = v ?? false),
@@ -1716,6 +1718,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ),
 
                 MyButton(
+
+
                   text: "Create Account",
                   isLoading: authState.status == AuthStatus.loading,
                   onPressed:
