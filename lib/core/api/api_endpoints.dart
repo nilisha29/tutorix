@@ -1,14 +1,38 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+
 class ApiEndpoints {
   ApiEndpoints._();
 
   // Base URL - change this for production
   // static const String baseUrl = 'http://10.0.2.2:3000/api/auth';
-  static const String baseUrl = 'http://10.0.2.2:5000/api'; // Android emulator
+  // static const String baseUrl = 'http://10.0.2.2:5000/api'; // Android emulator
+  
+    // static const String baseUrl = 'http://10.0.2.2:5050/api';
 
   //static const String baseUrl = 'http://localhost:3000/api/v1';
   // For Android Emulator use: 'http://10.0.2.2:3000/api/v1'
   // For iOS Simulator use: 'http://localhost:5000/api/v1'
   // For Physical Device use your computer's IP: 'http://192.168.x.x:5000/api/v1'
+
+
+    // Configuration
+  static const bool isPhysicalDevice = false;
+  static const String _ipAddress = '192.168.1.1';
+  static const int _port = 5050;
+
+  // Base URLs
+  static String get _host {
+    if (isPhysicalDevice) return _ipAddress;
+    if (kIsWeb || Platform.isIOS) return 'localhost';
+    if (Platform.isAndroid) return '10.0.2.2';
+    return 'localhost';
+  }
+
+  static String get serverUrl => 'http://$_host:$_port';
+  static String get baseUrl => '$serverUrl/api';
+  static String get mediaServerUrl => serverUrl;
 
   static const Duration connectionTimeout = Duration(seconds: 60);
   static const Duration receiveTimeout = Duration(seconds: 60);
@@ -23,11 +47,13 @@ class ApiEndpoints {
   static String categoryById(String id) => '/categories/$id';
 
   // ============ Student Endpoints ============
-  static const String students = '/students';
-  static const String studentLogin = '/auth/login';
-  static const String studentRegister = '/auth/register';
-  static String studentById(String id) => '/students/$id';
-  static String studentPhoto(String id) => '/students/$id/photo';
+  static const String users = '/users';
+  static const String userLogin = '/auth/login';
+  static const String userRegister = '/auth/register';
+  static String userById(String id) => '/students/$id';
+  static String userPhoto(String id) => '/students/$id/photo';
+    static String userProfilePicture(String filename) =>
+      '$mediaServerUrl/uploads/$filename';
 
   // ============ Item Endpoints ============
   static const String items = '/items';

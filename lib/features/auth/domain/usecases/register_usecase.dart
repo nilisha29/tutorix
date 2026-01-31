@@ -9,25 +9,34 @@ import 'package:tutorix/features/auth/domain/repositories/auth_repository.dart';
 
 /// Params for register usecase
 class RegisterUsecaseParams extends Equatable {
-  final String firstName;
+  // final String firstName;
+    final String fullName;       // Added fullName
+  final String username;  
   final String email;
-  final String lastName;
+  // final String lastName;
   final String? password;
+  final String? confirmPassword;
   final String? phoneNumber;
   final String? profilePicture;
+    final String? address; 
 
   const RegisterUsecaseParams({
-    required this.firstName,
+    // required this.firstName,
+     required this.fullName,
+    required this.username,
     required this.email,
-    required this.lastName,
+    // required this.lastName,
     this.password,
+    this.confirmPassword,
     this.phoneNumber,
     this.profilePicture,
+      this.address,
   });
 
   @override
   List<Object?> get props =>
-      [firstName, email, lastName, password, phoneNumber, profilePicture];
+      // [firstName, email, lastName, password, phoneNumber, profilePicture];
+       [fullName, username, email, password, phoneNumber, profilePicture, address];
 }
 
 /// Provider for RegisterUsecase
@@ -49,11 +58,15 @@ class RegisterUsecase
     final entity = AuthEntity(
       authId: DateTime.now().millisecondsSinceEpoch.toString(),
       token: '', // Token can be set after registration
-      firstName: params.firstName,
+      // firstName: params.firstName,
+       fullName: params.fullName, // OR parse if you separate first/last
+        username: params.username,
       email: params.email,
-      lastName: params.lastName,
+      // lastName: params.lastName,
       password: params.password,
+      confirmPassword: params.confirmPassword,
       phoneNumber: params.phoneNumber,
+       address: params.address,
       profilePicture: params.profilePicture,
     );
 

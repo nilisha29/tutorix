@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 /// Simple navigation utility class
 class AppRoutes {
   AppRoutes._();
+  
 
   /// Push a new route onto the stack
   static void push(BuildContext context, Widget page) {
@@ -27,6 +28,7 @@ class AppRoutes {
   static void pop(BuildContext context) {
     Navigator.pop(context);
   }
+  
   
 
   /// Pop to first route (root)

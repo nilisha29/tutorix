@@ -24,15 +24,19 @@ class RemoteAuthDatasource implements IRemoteAuthDatasource {
   Future<Map<String, dynamic>> register(AuthApiModel model) async {
     try {
       final response = await _apiClient.post(
-        ApiEndpoints.studentRegister,
+        ApiEndpoints.userRegister,
         data: {
-          'firstName': model.firstName,
-          'lastName': model.lastName,
+           'fullName': model.fullName, 
+          // 'firstName': model.firstName,
+          // 'lastName': model.lastName,
           'email': model.email,
           'phoneNumber': model.phoneNumber,
           'username': model.username,
           'password': model.password,
-          'batchId': model.batchId,
+          'confirmPassword': model.confirmPassword,
+          'address': model.address, 
+           'profileImage': model.profilePicture ?? '',
+          // 'batchId': model.batchId,
         },
       );
 
@@ -53,7 +57,7 @@ class RemoteAuthDatasource implements IRemoteAuthDatasource {
     try {
       print('[DEBUG] RemoteAuthDatasource.login() called with email: $email');
       final response = await _apiClient.post(
-        ApiEndpoints.studentLogin,
+        ApiEndpoints.userLogin,
         data: {
           'email': email,
           'password': password,

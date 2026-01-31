@@ -113,12 +113,14 @@ print('[DEBUG] Local Storage Result: $localUser');
 
     final hiveModel = AuthHiveModel(
       authId: userData['id']?.toString() ?? '',
-      firstName: userData['firstName'] ?? '',
-      lastName: userData['lastName'] ?? '',
+       fullName: userData['fullName'] ?? '${userData['firstName']} ${userData['lastName']}',
+      // firstName: userData['firstName'] ?? '',
+      // lastName: userData['lastName'] ?? '',
       email: userData['email'] ?? email,
       phoneNumber: userData['phoneNumber'],
       profilePicture: userData['profilePicture'],
       token: userData['token'] ?? '',
+       address: userData['address'],
       password: password,
     );
 
@@ -138,12 +140,15 @@ print('[DEBUG] Local Storage Result: $localUser');
     try {
       // Create API model from entity
       final apiModel = AuthApiModel(
-        firstName: entity.firstName,
+          fullName: entity.fullName,
+        // firstName: entity.firstName,
         username: entity.email.split('@').first,
         email: entity.email,
         phoneNumber: entity.phoneNumber ?? '',
-        lastName: entity.lastName,
+        // lastName: entity.lastName,
+        address: entity.address,
         password: entity.password ?? '',
+          confirmPassword: entity.password!,
         profilePicture: entity.profilePicture,
       );
 

@@ -123,13 +123,43 @@ class ApiClient {
   }
 
   // Multipart request for file uploads
+  // IMPORTANT: Uses a separate Dio instance WITHOUT retry interceptor
+  // because retries can cause multipart/form-data to hang
   Future<Response> uploadFile(
     String path, {
     required FormData formData,
     Options? options,
     ProgressCallback? onSendProgress,
   }) async {
-    return _dio.post(
+    // Create a separate Dio for uploads (no retry interceptor)
+    final uploadDio = Dio(
+      BaseOptions(
+        baseUrl: _dio.options.baseUrl,
+        connectTimeout: const Duration(minutes: 5),
+        receiveTimeout: const Duration(minutes: 5),
+        headers: {
+          'Accept': 'application/json',
+        },
+      ),
+    );
+    
+    // Only add auth interceptor (not retry)
+    uploadDio.interceptors.add(_AuthInterceptor());
+    
+    if (kDebugMode) {
+      uploadDio.interceptors.add(
+        PrettyDioLogger(
+          requestHeader: true,
+          requestBody: true,
+          responseBody: true,
+          responseHeader: false,
+          error: true,
+          compact: true,
+        ),
+      );
+    }
+    
+    return uploadDio.post(
       path,
       data: formData,
       options: options,
@@ -152,7 +182,7 @@ class _AuthInterceptor extends Interceptor {
     final publicEndpoints = [
       ApiEndpoints.batches,
       ApiEndpoints.categories,
-      ApiEndpoints.studentLogin,
+      ApiEndpoints.userLogin,
     ];
 
     final isPublicGet =
@@ -160,8 +190,8 @@ class _AuthInterceptor extends Interceptor {
         publicEndpoints.any((endpoint) => options.path.startsWith(endpoint));
 
     final isAuthEndpoint =
-        options.path == ApiEndpoints.studentLogin ||
-        options.path == ApiEndpoints.students;
+        options.path == ApiEndpoints.userLogin ||
+        options.path == ApiEndpoints.users;
 
     if (!isPublicGet && !isAuthEndpoint) {
       final token = await _storage.read(key: _tokenKey);

@@ -65,6 +65,8 @@ dev_dependencies:
   dio_smart_retry: ^7.0.1
   pretty_dio_logger: ^1.4.0
   connectivity_plus: ^7.0.0
+  image_picker: ^1.0.7
+  
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

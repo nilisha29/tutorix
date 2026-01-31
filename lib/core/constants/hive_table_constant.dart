@@ -3,7 +3,8 @@ class HiveTableConstant {
   HiveTableConstant._();
 
   // Database name
-  static const String dbName = "tutorix_db";
+  // static const String dbName = "tutorix_db";
+    static const String dbName = "tutorix_hometutor";
 
 
   // Auth Table
