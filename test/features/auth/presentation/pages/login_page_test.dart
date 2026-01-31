@@ -14,6 +14,7 @@ import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
 import 'package:tutorix/core/error/failures.dart';
 
+
 /// ---------------- MOCK CLASSES ----------------
 class MockLoginUsecase extends Mock implements LoginUsecase {}
 class MockRegisterUsecase extends Mock implements RegisterUsecase {}
