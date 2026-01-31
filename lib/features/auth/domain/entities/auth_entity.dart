@@ -49,6 +49,7 @@
 // }
 
 
+
 import 'package:equatable/equatable.dart';
 
 /// Represents the user in the domain layer
