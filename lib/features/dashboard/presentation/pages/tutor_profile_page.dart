@@ -20,7 +20,7 @@ class TutorProfilePage extends ConsumerStatefulWidget {
     required this.initialExperienceYears,
     required this.initialSubjects,
   });
-  
+
 
   final String tutorId;
   final String initialName;
@@ -151,6 +151,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
     });
     return map;
   }
+
 
   void _hydrateFromData(Map<String, dynamic> data) {
     final aboutText = (data['bio'] ?? data['about'] ?? '').toString();
