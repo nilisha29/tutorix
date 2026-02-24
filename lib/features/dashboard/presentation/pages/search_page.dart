@@ -154,6 +154,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     });
   }
 
+
   List<_TutorListItem> _filterByQuery(List<_TutorListItem> list, String query) {
     if (query.isEmpty) return list;
     final lower = query.toLowerCase();
