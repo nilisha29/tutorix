@@ -165,6 +165,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         .toList();
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
