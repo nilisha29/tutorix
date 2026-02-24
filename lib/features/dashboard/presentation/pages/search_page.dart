@@ -73,6 +73,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     }
   }
 
+
   Future<Response<dynamic>> _requestTutors(ApiClient apiClient) async {
     final candidatePaths = <String>[
       '/tutors',
