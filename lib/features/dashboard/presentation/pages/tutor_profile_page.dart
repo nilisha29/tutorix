@@ -152,13 +152,13 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
     return map;
   }
 
-
   void _hydrateFromData(Map<String, dynamic> data) {
     final aboutText = (data['bio'] ?? data['about'] ?? '').toString();
     final ratingRaw = data['averageRating'] ?? data['rating'] ?? _rating;
     final ratingNum = ratingRaw is num
         ? ratingRaw.toDouble()
         : double.tryParse(ratingRaw.toString()) ?? 4.8;
+
 
     final priceRaw = data['hourlyRate'] ?? data['pricePerHour'] ?? data['price'];
     final priceNum = priceRaw is num
@@ -204,6 +204,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
     }
 
     final image = (data['profileImage'] ?? data['avatar'] ?? '').toString();
+
 
     final extras = <String, String>{
       if ((data['email'] ?? '').toString().isNotEmpty)
