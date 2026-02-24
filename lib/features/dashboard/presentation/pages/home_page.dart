@@ -844,21 +844,53 @@ import 'package:tutorix/core/widgets/tutor_card.dart';
 import 'package:tutorix/core/widgets/recommended_card.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
 
     // Determine profile image
-    ImageProvider? profileImage;
     final profilePath = authState.profilePicture ?? authState.authEntity?.profilePicture;
-    if (profilePath != null && profilePath.isNotEmpty) {
+    print('[DEBUG HOME] Profile Path: $profilePath'); // Debug log
+    
+    Widget getProfileAvatar() {
+      if (profilePath == null || profilePath.isEmpty) {
+        return CircleAvatar(
+          radius: 24,
+          backgroundColor: Colors.orange.shade100,
+          child: const Icon(Icons.person, color: Colors.orange),
+        );
+      }
+      
       if (profilePath.startsWith('http')) {
-        profileImage = NetworkImage(profilePath);
+        print('[DEBUG HOME] Using NetworkImage for: $profilePath');
+        return CircleAvatar(
+          radius: 24,
+          backgroundColor: Colors.orange.shade100,
+          backgroundImage: NetworkImage(profilePath),
+          onBackgroundImageError: (exception, stackTrace) {
+            print('[DEBUG HOME] Failed to load network image: $exception');
+          },
+        );
       } else {
-        profileImage = FileImage(File(profilePath));
+        print('[DEBUG HOME] Using FileImage for: $profilePath');
+        return CircleAvatar(
+          radius: 24,
+          backgroundColor: Colors.orange.shade100,
+          backgroundImage: FileImage(File(profilePath)),
+        );
       }
     }
 
@@ -873,14 +905,7 @@ class HomePage extends ConsumerWidget {
               // 🔝 TOP BAR
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.orange.shade100,
-                    backgroundImage: profileImage,
-                    child: profileImage == null
-                        ? const Icon(Icons.person, color: Colors.orange)
-                        : null,
-                  ),
+                  getProfileAvatar(),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

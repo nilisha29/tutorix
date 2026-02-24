@@ -1564,11 +1564,31 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final authState = ref.watch(authViewModelProvider);
     final profilePath = authState.profilePicture;
 
-    ImageProvider? profileImage;
-    if (profilePath != null && profilePath.isNotEmpty) {
-      profileImage = profilePath.startsWith('http')
-          ? NetworkImage(profilePath)
-          : FileImage(File(profilePath));
+    Widget getProfileAvatar() {
+      if (profilePath == null || profilePath.isEmpty) {
+        return CircleAvatar(
+          radius: 42,
+          backgroundColor: Colors.white,
+          child: const Icon(Icons.person, size: 50, color: Colors.grey),
+        );
+      }
+
+      if (profilePath.startsWith('http')) {
+        return CircleAvatar(
+          radius: 42,
+          backgroundColor: Colors.white,
+          backgroundImage: NetworkImage(profilePath),
+          onBackgroundImageError: (exception, stackTrace) {
+            print('[DEBUG REGISTER] Failed to load network image: $exception');
+          },
+        );
+      } else {
+        return CircleAvatar(
+          radius: 42,
+          backgroundColor: Colors.white,
+          backgroundImage: FileImage(File(profilePath)),
+        );
+      }
     }
 
     return Scaffold(
@@ -1595,15 +1615,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 /// PROFILE IMAGE
                 Column(
                   children: [
-                    CircleAvatar(
-                      radius: 42,
-                      backgroundColor: Colors.white,
-                      backgroundImage: profileImage,
-                      child: profileImage == null
-                          ? const Icon(Icons.person,
-                              size: 50, color: Colors.grey)
-                          : null,
-                    ),
+                    getProfileAvatar(),
                     TextButton(
                       child: const Text("Upload your picture"),
                       onPressed: () {

@@ -452,40 +452,77 @@ import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dar
 import 'package:tutorix/features/editprofile/presentation/pages/edit_profile.dart';
 
 
-class ProfilePage extends ConsumerWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends ConsumerState<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
     final authNotifier = ref.read(authViewModelProvider.notifier);
 
-    ImageProvider? profileImage;
     final profilePath =
         authState.profilePicture ?? authState.authEntity?.profilePicture;
+    
+    print('[DEBUG PROFILE] Profile Path: $profilePath'); // Debug log
 
-    if (profilePath != null && profilePath.isNotEmpty) {
-      profileImage = profilePath.startsWith('http')
-          ? NetworkImage(profilePath)
-          : FileImage(File(profilePath));
+    Widget getProfileAvatar() {
+      if (profilePath == null || profilePath.isEmpty) {
+        return CircleAvatar(
+          radius: 48,
+          child: const Icon(Icons.person, size: 40),
+        );
+      }
+
+      if (profilePath.startsWith('http')) {
+        print('[DEBUG PROFILE] Using NetworkImage for: $profilePath');
+        return CircleAvatar(
+          radius: 48,
+          backgroundImage: NetworkImage(profilePath),
+          onBackgroundImageError: (exception, stackTrace) {
+            print('[DEBUG PROFILE] Failed to load network image: $exception');
+          },
+        );
+      } else {
+        print('[DEBUG PROFILE] Using FileImage for: $profilePath');
+        return CircleAvatar(
+          radius: 48,
+          backgroundImage: FileImage(File(profilePath)),
+        );
+      }
     }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profile"),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Restart app or re-login to sync profile from web'),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 48,
-              backgroundImage: profileImage,
-              child: profileImage == null
-                  ? const Icon(Icons.person, size: 40)
-                  : null,
-            ),
+            getProfileAvatar(),
             const SizedBox(height: 12),
 
             Text(

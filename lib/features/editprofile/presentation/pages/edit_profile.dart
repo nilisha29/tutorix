@@ -152,6 +152,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
+import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -191,14 +192,34 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
 
-    ImageProvider? profileImage;
     final profilePath =
         authState.profilePicture ?? authState.authEntity?.profilePicture;
 
-    if (profilePath != null && profilePath.isNotEmpty) {
-      profileImage = profilePath.startsWith('http')
-          ? NetworkImage(profilePath)
-          : FileImage(File(profilePath));
+    Widget getProfileAvatar() {
+      if (profilePath == null || profilePath.isEmpty) {
+        return CircleAvatar(
+          radius: 55,
+          backgroundColor: Colors.grey.shade200,
+          child: const Icon(Icons.person, size: 50, color: Colors.grey),
+        );
+      }
+
+      if (profilePath.startsWith('http')) {
+        return CircleAvatar(
+          radius: 55,
+          backgroundColor: Colors.grey.shade200,
+          backgroundImage: NetworkImage(profilePath),
+          onBackgroundImageError: (exception, stackTrace) {
+            print('[DEBUG EDIT] Failed to load network image: $exception');
+          },
+        );
+      } else {
+        return CircleAvatar(
+          radius: 55,
+          backgroundColor: Colors.grey.shade200,
+          backgroundImage: FileImage(File(profilePath)),
+        );
+      }
     }
 
     return Scaffold(
@@ -215,14 +236,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               child: Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  CircleAvatar(
-                    radius: 55,
-                    backgroundColor: Colors.grey.shade200,
-                    backgroundImage: profileImage,
-                    child: profileImage == null
-                        ? const Icon(Icons.person, size: 50, color: Colors.grey)
-                        : null,
-                  ),
+                  getProfileAvatar(),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.green,
@@ -308,7 +322,24 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                         address: addressController.text,
                         profilePicture: authState.profilePicture,
                       );
-                  Navigator.pop(context);
+                  
+                  final updatedState = ref.read(authViewModelProvider);
+                  if (updatedState.status == AuthStatus.authenticated) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Profile updated successfully!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    Navigator.pop(context);
+                  } else if (updatedState.status == AuthStatus.error) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(updatedState.errorMessage ?? 'Failed to update profile'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
                 child: const Text(
                   "Save Changes",

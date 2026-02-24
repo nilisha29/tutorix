@@ -1250,6 +1250,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:tutorix/core/api/api_client.dart';
@@ -1264,11 +1265,35 @@ final authViewModelProvider =
 
 class AuthViewModel extends Notifier<AuthState> {
   late final ApiClient _apiClient;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  static const String _tokenKey = 'auth_token';
 
   @override
   AuthState build() {
     _apiClient = ref.read(apiClientProvider);
     return const AuthState();
+  }
+
+  // =========================
+  // HELPER: Convert localhost to 10.0.2.2 for Android emulator
+  // =========================
+  String _fixLocalhostUrl(String? url) {
+    if (url == null || url.isEmpty) return url ?? '';
+    // Replace localhost with 10.0.2.2 for Android emulator
+    return url.replaceAll('http://localhost:', 'http://10.0.2.2:');
+  }
+
+  String _sanitizeToken(String? rawToken) {
+    if (rawToken == null) return '';
+    var token = rawToken.trim();
+    if (token.toLowerCase().startsWith('bearer ')) {
+      token = token.substring(7).trim();
+    }
+    if ((token.startsWith('"') && token.endsWith('"')) ||
+        (token.startsWith("'") && token.endsWith("'"))) {
+      token = token.substring(1, token.length - 1).trim();
+    }
+    return token;
   }
 
   // =========================
@@ -1327,7 +1352,7 @@ class AuthViewModel extends Notifier<AuthState> {
         // Handle relative vs absolute URL
         final profileUrl = user['profileImage'] != null
             ? (user['profileImage'].startsWith('http')
-                ? user['profileImage']
+                ? _fixLocalhostUrl(user['profileImage'])
                 : '${ApiEndpoints.mediaServerUrl}${user['profileImage']}')
             : null;
 
@@ -1385,13 +1410,21 @@ class AuthViewModel extends Notifier<AuthState> {
 
       if (response.statusCode == 200) {
         final user = response.data['data'];
-        final token = response.data['token'] ?? '';
+        final token = _sanitizeToken(response.data['token']?.toString());
+
+        if (token.isNotEmpty) {
+          await _secureStorage.write(key: _tokenKey, value: token);
+        } else {
+          await _secureStorage.delete(key: _tokenKey);
+        }
 
         final profileUrl = user['profileImage'] != null
             ? (user['profileImage'].startsWith('http')
-                ? user['profileImage']
+                ? _fixLocalhostUrl(user['profileImage'])
                 : '${ApiEndpoints.mediaServerUrl}${user['profileImage']}')
             : null;
+
+        print('[LOGIN] ✅ Logged in successfully. Profile image: $profileUrl');
 
         final authEntity = AuthEntity(
           authId: user['_id'],
@@ -1409,6 +1442,8 @@ class AuthViewModel extends Notifier<AuthState> {
           authEntity: authEntity,
           profilePicture: profileUrl,
         );
+        
+        print('[LOGIN] ✅ Logged in successfully. Profile image: $profileUrl');
       } else {
         state = state.copyWith(
           status: AuthStatus.error,
@@ -1434,6 +1469,7 @@ class AuthViewModel extends Notifier<AuthState> {
   // LOGOUT
   // =========================
   void logout() {
+    _secureStorage.delete(key: _tokenKey);
     state = const AuthState();
   }
 
@@ -1444,37 +1480,111 @@ class AuthViewModel extends Notifier<AuthState> {
     state = state.copyWith(profilePicture: localPath);
   }
 
-
   Future<void> updateProfile({
-  required String fullName,
-  String? phoneNumber,
-  String? address,
-  String? profilePicture,
-}) async {
-  try {
+    required String fullName,
+    String? phoneNumber,
+    String? address,
+    String? profilePicture, // local path
+  }) async {
     state = state.copyWith(status: AuthStatus.loading);
 
-    final updatedUser = state.authEntity?.copyWith(
-      fullName: fullName,
-      phoneNumber: phoneNumber,
-      address: address,
-      profilePicture: profilePicture,
-    );
+    try {
+      final formData = FormData();
 
-    // 🔹 Normally you would call repository here
-    // await _authRepository.updateProfile(updatedUser);
+      // Add text fields
+      formData.fields.add(MapEntry('fullName', fullName));
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        formData.fields.add(MapEntry('phoneNumber', phoneNumber));
+      }
+      if (address != null && address.isNotEmpty) {
+        formData.fields.add(MapEntry('address', address));
+      }
 
-    state = state.copyWith(
-      authEntity: updatedUser,
-      profilePicture: profilePicture,
-      status: AuthStatus.authenticated,
-    );
-  } catch (e) {
-    state = state.copyWith(
-      status: AuthStatus.error,
-      errorMessage: e.toString(),
-    );
+      // Upload image if provided and is a local file (not a server URL)
+      if (profilePicture != null && 
+          profilePicture.isNotEmpty && 
+          !profilePicture.startsWith('http')) {
+        final file = File(profilePicture);
+        if (await file.exists()) {
+          print('[UPDATE PROFILE] Uploading image: $profilePicture');
+          formData.files.add(
+            MapEntry(
+              'profileImage',
+              await MultipartFile.fromFile(
+                file.path,
+                filename: p.basename(file.path),
+              ),
+            ),
+          );
+        }
+      }
+
+      print('[UPDATE PROFILE] FormData ready, sending to server...');
+      
+      final response = await _apiClient.uploadFile(
+        ApiEndpoints.users,
+        formData: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+
+      print('[UPDATE PROFILE] Response status: ${response.statusCode}');
+      print('[UPDATE PROFILE] Response data: ${response.data}');
+
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        final user = response.data['data'];
+
+        // Handle response image URL
+        final profileUrl = user['profileImage'] != null
+            ? (user['profileImage'].startsWith('http')
+                ? _fixLocalhostUrl(user['profileImage'])
+                : '${ApiEndpoints.mediaServerUrl}${user['profileImage']}')
+            : state.authEntity?.profilePicture;
+
+        print('[UPDATE PROFILE] Profile image URL: $profileUrl');
+
+        final authEntity = AuthEntity(
+          authId: user['_id'] ?? state.authEntity?.authId ?? '',
+          token: state.authEntity?.token ?? '',
+          fullName: user['fullName'] ?? fullName,
+          email: user['email'] ?? state.authEntity?.email ?? '',
+          username: user['username'] ?? state.authEntity?.username,
+          phoneNumber: user['phoneNumber'] ?? phoneNumber,
+          address: user['address'] ?? address,
+          profilePicture: profileUrl,
+        );
+
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          authEntity: authEntity,
+          profilePicture: profileUrl,
+        );
+        
+        print('[UPDATE PROFILE] ✅ Profile updated successfully');
+      } else {
+        state = state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: response.data is Map 
+              ? response.data['message'] ?? 'Update failed'
+              : 'Update failed',
+        );
+      }
+    } on DioException catch (e) {
+      print('[UPDATE PROFILE] DioException: ${e.message}');
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: e.response?.data is Map
+            ? e.response?.data['message']
+            : e.message ?? 'Network error',
+      );
+    } catch (e) {
+      print('[UPDATE PROFILE] Error: $e');
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: e.toString(),
+      );
+    }
   }
-}
 
 }

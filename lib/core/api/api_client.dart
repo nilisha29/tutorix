@@ -173,6 +173,25 @@ class _AuthInterceptor extends Interceptor {
   final _storage = const FlutterSecureStorage();
   static const String _tokenKey = 'auth_token';
 
+  String? _normalizeToken(String? rawToken) {
+    if (rawToken == null) return null;
+
+    var token = rawToken.trim();
+    if (token.isEmpty || token.toLowerCase() == 'null') return null;
+
+    if ((token.startsWith('"') && token.endsWith('"')) ||
+        (token.startsWith("'") && token.endsWith("'"))) {
+      token = token.substring(1, token.length - 1).trim();
+    }
+
+    if (token.toLowerCase().startsWith('bearer ')) {
+      token = token.substring(7).trim();
+    }
+
+    if (token.isEmpty || token.contains(' ')) return null;
+    return token;
+  }
+
   @override
   void onRequest(
     RequestOptions options,
@@ -194,9 +213,12 @@ class _AuthInterceptor extends Interceptor {
         options.path == ApiEndpoints.users;
 
     if (!isPublicGet && !isAuthEndpoint) {
-      final token = await _storage.read(key: _tokenKey);
+      final storedToken = await _storage.read(key: _tokenKey);
+      final token = _normalizeToken(storedToken);
       if (token != null) {
         options.headers['Authorization'] = 'Bearer $token';
+      } else {
+        options.headers.remove('Authorization');
       }
     }
 

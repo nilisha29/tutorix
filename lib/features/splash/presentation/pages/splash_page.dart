@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/services/storage/user_session_service.dart';
+import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/home_page.dart';
 import 'package:tutorix/features/onboarding/presentation/pages/onboarding_page.dart';
 
@@ -18,8 +19,8 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     _navigateToOnboarding();
   }
 
-  void _navigateToOnboarding() {
-    Future.delayed(const Duration(seconds: 2), () {
+  void _navigateToOnboarding() async {
+    Future.delayed(const Duration(seconds: 2), () async {
       if (!mounted) return;
       //check if the widget is still mounted
       final UserSessionService = ref.read(userSessionServiceProvider);
@@ -27,6 +28,8 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
       if (isLoggedIn) {
         // User is logged in → Go to home page
+        
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
