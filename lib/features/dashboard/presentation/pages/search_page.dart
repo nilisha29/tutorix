@@ -137,6 +137,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     return map;
   }
 
+
   String _normalizeImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     if (url.startsWith('http://localhost:') && Platform.isAndroid) {
