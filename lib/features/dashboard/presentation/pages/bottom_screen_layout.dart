@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/booking_page.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/categories_page.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/home_page.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/profile_page.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/search_page.dart';
@@ -20,6 +21,7 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
   final List<Widget> _screens = const [
     HomePage(),
     SearchPage(),
+    CategoriesPage(),
     BookingPage(),
     ProfilePage(),
   ];
@@ -44,6 +46,10 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
           BottomNavigationBarItem(
             icon: Icon(Icons.search),
             label: 'Search',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category),
+            label: 'Categories',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.book_online),

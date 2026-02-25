@@ -50,15 +50,25 @@ import 'package:flutter/material.dart';
 class RecommendedCard extends StatelessWidget {
   final String name;
   final String subject;
+  final String rating;
+  final String price;
+  final String? profileImageUrl;
+  final VoidCallback? onViewProfile;
 
   const RecommendedCard({
     super.key,
     required this.name,
     required this.subject,
+    this.rating = '4.9',
+    this.price = 'Rs. 60/hr',
+    this.profileImageUrl,
+    this.onViewProfile,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasImage = profileImageUrl != null && profileImageUrl!.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -76,10 +86,12 @@ class RecommendedCard extends StatelessWidget {
       child: Row(
         children: [
           // 👤 Avatar
-          const CircleAvatar(
+          CircleAvatar(
             radius: 28,
             backgroundColor: Colors.grey,
-            child: Icon(Icons.person, color: Colors.white),
+            backgroundImage: hasImage ? NetworkImage(profileImageUrl!) : null,
+            onBackgroundImageError: hasImage ? (_, __) {} : null,
+            child: hasImage ? null : const Icon(Icons.person, color: Colors.white),
           ),
 
           const SizedBox(width: 12),
@@ -114,14 +126,14 @@ class RecommendedCard extends StatelessWidget {
                 const SizedBox(height: 6),
 
                 Row(
-                  children: const [
-                    Icon(Icons.star, size: 14, color: Colors.orange),
-                    SizedBox(width: 4),
-                    Text("4.9", style: TextStyle(fontSize: 12)),
-                    SizedBox(width: 10),
+                  children: [
+                    const Icon(Icons.star, size: 14, color: Colors.orange),
+                    const SizedBox(width: 4),
+                    Text(rating, style: const TextStyle(fontSize: 12)),
+                    const SizedBox(width: 10),
                     Text(
-                      "Rs. 60/hr",
-                      style: TextStyle(
+                      price,
+                      style: const TextStyle(
                         color: Colors.red,
                         fontSize: 12,
                       ),
@@ -134,7 +146,7 @@ class RecommendedCard extends StatelessWidget {
 
           // 👉 Button
           ElevatedButton(
-            onPressed: () {},
+            onPressed: onViewProfile,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

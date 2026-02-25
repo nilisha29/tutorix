@@ -130,16 +130,20 @@ class TutorCard extends StatelessWidget {
   final String name;
   final String subject;
   final String rating;
+  final String? profileImageUrl;
 
   const TutorCard({
     super.key,
     required this.name,
     required this.subject,
     required this.rating,
+    this.profileImageUrl,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasImage = profileImageUrl != null && profileImageUrl!.isNotEmpty;
+
     return SizedBox(
       width: 160, // ⭐ REQUIRED for horizontal ListView
       child: Card(
@@ -153,10 +157,14 @@ class TutorCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 36,
                 backgroundColor: Colors.grey,
-                child: Icon(Icons.person, size: 36, color: Colors.white),
+                backgroundImage: hasImage ? NetworkImage(profileImageUrl!) : null,
+                onBackgroundImageError: hasImage ? (_, __) {} : null,
+                child: hasImage
+                    ? null
+                    : const Icon(Icons.person, size: 36, color: Colors.white),
               ),
 
               const SizedBox(height: 10),

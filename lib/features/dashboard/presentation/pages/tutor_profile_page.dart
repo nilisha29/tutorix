@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
 
-
 class TutorProfilePage extends ConsumerStatefulWidget {
   const TutorProfilePage({
     super.key,
@@ -20,7 +19,6 @@ class TutorProfilePage extends ConsumerStatefulWidget {
     required this.initialExperienceYears,
     required this.initialSubjects,
   });
-
 
   final String tutorId;
   final String initialName;
@@ -159,7 +157,6 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
         ? ratingRaw.toDouble()
         : double.tryParse(ratingRaw.toString()) ?? 4.8;
 
-
     final priceRaw = data['hourlyRate'] ?? data['pricePerHour'] ?? data['price'];
     final priceNum = priceRaw is num
         ? priceRaw.toDouble()
@@ -204,7 +201,6 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
     }
 
     final image = (data['profileImage'] ?? data['avatar'] ?? '').toString();
-
 
     final extras = <String, String>{
       if ((data['email'] ?? '').toString().isNotEmpty)
