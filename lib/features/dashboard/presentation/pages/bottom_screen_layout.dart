@@ -28,38 +28,46 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
+    return WillPopScope(
+      onWillPop: () async {
+        if (_selectedIndex != 0) {
+          setState(() => _selectedIndex = 0);
+        }
+        return false;
+      },
+      child: Scaffold(
+        body: _screens[_selectedIndex],
 
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        backgroundColor: Colors.blueGrey,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.black,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.category),
-            label: 'Categories',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book_online),
-            label: 'Booking',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          backgroundColor: Colors.blueGrey,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.black,
+          onTap: (index) => setState(() => _selectedIndex = index),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.search),
+              label: 'Search',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.category),
+              label: 'Categories',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.book_online),
+              label: 'Booking',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }

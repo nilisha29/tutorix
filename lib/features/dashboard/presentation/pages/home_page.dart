@@ -1100,7 +1100,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               const SizedBox(height: 16),
               SizedBox(
-                height: 210,
+                height: 245,
                 child: _loadingTutors
                     ? const Center(child: CircularProgressIndicator())
                     : _topTutors.isEmpty
@@ -1115,6 +1115,25 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 subject: tutor.subject,
                                 rating: tutor.rating,
                                 profileImageUrl: _normalizeImageUrl(tutor.profileImage),
+                                onViewProfile: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => TutorProfilePage(
+                                        tutorId: tutor.id,
+                                        initialName: tutor.name,
+                                        initialSubject: tutor.subject,
+                                        initialRating: tutor.rating,
+                                        initialProfileImage:
+                                            _normalizeImageUrl(tutor.profileImage),
+                                        initialPrice: tutor.price,
+                                        initialAbout: tutor.about,
+                                        initialExperienceYears: tutor.experienceYears,
+                                        initialSubjects: tutor.subjectList,
+                                      ),
+                                    ),
+                                  );
+                                },
                               );
                             },
                           ),

@@ -131,6 +131,7 @@ class TutorCard extends StatelessWidget {
   final String subject;
   final String rating;
   final String? profileImageUrl;
+  final VoidCallback? onViewProfile;
 
   const TutorCard({
     super.key,
@@ -138,6 +139,7 @@ class TutorCard extends StatelessWidget {
     required this.subject,
     required this.rating,
     this.profileImageUrl,
+    this.onViewProfile,
   });
 
   @override
@@ -205,6 +207,29 @@ class TutorCard extends StatelessWidget {
                   ),
                 ],
               ),
+
+              if (onViewProfile != null) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 26,
+                  child: ElevatedButton(
+                    onPressed: onViewProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFA6F3E9),
+                      foregroundColor: Colors.black,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'View Profile',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

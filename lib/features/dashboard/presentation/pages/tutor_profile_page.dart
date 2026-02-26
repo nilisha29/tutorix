@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/book_tutor_page.dart';
 
 class TutorProfilePage extends ConsumerStatefulWidget {
   const TutorProfilePage({
@@ -46,6 +47,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
   late String _about;
   late String _experienceYears;
   late List<String> _subjects;
+  List<String> _availabilitySlots = const [];
   List<_TutorReview> _reviews = [];
   Map<String, String> _extraFields = {};
 
@@ -200,6 +202,8 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
       }
     }
 
+    final slots = _extractAvailabilitySlots(data);
+
     final image = (data['profileImage'] ?? data['avatar'] ?? '').toString();
 
     final extras = <String, String>{
@@ -223,8 +227,115 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
     _about = aboutText.isNotEmpty ? aboutText : (_about.isNotEmpty ? _about : 'No bio available');
     _experienceYears = '$expNum Years';
     _subjects = subjectList.isNotEmpty ? subjectList : _subjects;
+    _availabilitySlots = slots;
     _reviews = reviews;
     _extraFields = extras;
+  }
+
+  List<String> _extractAvailabilitySlots(Map<String, dynamic> data) {
+    final slotSet = <String>{};
+    final candidates = [
+      data['availabilitySlots'],
+      data['availability'],
+      data['availabilitySlot'],
+      data['slots'],
+      data['schedule'],
+      data['schedules'],
+    ];
+
+    for (final candidate in candidates) {
+      _collectSlots(candidate, slotSet);
+    }
+
+    return slotSet.toList();
+  }
+
+  void _collectSlots(dynamic value, Set<String> bucket, {String? prefix}) {
+    if (value == null) return;
+
+    if (value is String) {
+      final normalized = value.trim();
+      if (normalized.isNotEmpty) {
+        bucket.add(prefix == null ? normalized : '$prefix: $normalized');
+      }
+      return;
+    }
+
+    if (value is List) {
+      for (final item in value) {
+        _collectSlots(item, bucket, prefix: prefix);
+      }
+      return;
+    }
+
+    if (value is Map) {
+      final map = _safeMap(value);
+      final day = (map['day'] ?? map['date'] ?? map['weekday'] ?? prefix ?? '')
+          .toString()
+          .trim();
+
+      final start = (map['startTime'] ?? map['start'] ?? map['from'] ?? '')
+          .toString()
+          .trim();
+      final end = (map['endTime'] ?? map['end'] ?? map['to'] ?? '')
+          .toString()
+          .trim();
+
+      if (start.isNotEmpty && end.isNotEmpty) {
+        if (day.isNotEmpty) {
+          bucket.add('$day: $start - $end');
+        } else {
+          bucket.add('$start - $end');
+        }
+      } else if (start.isNotEmpty) {
+        if (day.isNotEmpty) {
+          bucket.add('$day: $start');
+        } else {
+          bucket.add(start);
+        }
+      }
+
+      if (map['slots'] != null) {
+        _collectSlots(map['slots'], bucket, prefix: day.isEmpty ? prefix : day);
+      }
+      if (map['times'] != null) {
+        _collectSlots(map['times'], bucket, prefix: day.isEmpty ? prefix : day);
+      }
+
+      for (final entry in map.entries) {
+        final key = entry.key.toString();
+        final keyLower = key.toLowerCase();
+
+        if (key == 'day' ||
+            key == 'date' ||
+            key == 'weekday' ||
+            key == 'startTime' ||
+            key == 'start' ||
+            key == 'from' ||
+            key == 'endTime' ||
+            key == 'end' ||
+            key == 'to' ||
+            key == 'slots' ||
+            key == 'times' ||
+            keyLower == 'id' ||
+            keyLower == '_id' ||
+            keyLower == 'userid' ||
+            keyLower == 'user_id' ||
+            keyLower == 'tutorid' ||
+            keyLower == 'tutor_id' ||
+            keyLower == 'teacherid' ||
+            keyLower == 'teacher_id' ||
+            keyLower == 'createdat' ||
+            keyLower == 'updatedat' ||
+            keyLower == '__v') {
+          continue;
+        }
+
+        if (entry.value is List || entry.value is Map || entry.value is String) {
+          _collectSlots(entry.value, bucket, prefix: key);
+        }
+      }
+    }
   }
 
   String _normalizeImageUrl(String? url) {
@@ -234,6 +345,57 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
     }
     if (url.startsWith('http')) return url;
     return '${ApiEndpoints.mediaServerUrl}$url';
+  }
+
+  List<_AvailabilityBlock> _buildAvailabilityBlocks() {
+    final grouped = <String, List<String>>{};
+
+    for (final rawSlot in _availabilitySlots) {
+      final value = rawSlot.trim();
+      if (value.isEmpty) continue;
+
+      final separatorIndex = value.indexOf(':');
+      if (separatorIndex <= 0) {
+        grouped.putIfAbsent(value, () => <String>[]);
+        continue;
+      }
+
+      final dayLabel = value.substring(0, separatorIndex).trim();
+      final timePart = value.substring(separatorIndex + 1).trim();
+      final times = timePart
+          .split(RegExp(r'\s*-\s*|\s*,\s*'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      final bucket = grouped.putIfAbsent(dayLabel, () => <String>[]);
+      for (final time in times) {
+        if (!bucket.contains(time)) {
+          bucket.add(time);
+        }
+      }
+    }
+
+    bool _isMetaOrIdLabel(String label) {
+      final v = label.trim().toLowerCase();
+      if (v.isEmpty) return true;
+      if (v == 'id' ||
+          v == '_id' ||
+          v == 'userid' ||
+          v == 'tutorid' ||
+          v == 'teacherid' ||
+          v == 'createdat' ||
+          v == 'updatedat' ||
+          v == '__v') {
+        return true;
+      }
+      return RegExp(r'^[a-f0-9]{24}$').hasMatch(v);
+    }
+
+    return grouped.entries
+        .where((entry) => !_isMetaOrIdLabel(entry.key))
+        .map((entry) => _AvailabilityBlock(dayLabel: entry.key, times: entry.value))
+        .toList();
   }
 
   Future<void> _submitReview() async {
@@ -494,6 +656,98 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                     ),
                   ],
                   const SizedBox(height: 10),
+                  if (_availabilitySlots.isNotEmpty)
+                    Builder(
+                      builder: (_) {
+                        final availabilityBlocks = _buildAvailabilityBlocks();
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE6F5F1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFB8E8DE)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Availability',
+                                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                height: 185,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: availabilityBlocks.length,
+                                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                  itemBuilder: (context, index) {
+                                    final block = availabilityBlocks[index];
+                                    return Container(
+                                      width: 126,
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFCBEAE3),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            block.dayLabel,
+                                            textAlign: TextAlign.center,
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Color(0xFF567F9F),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Expanded(
+                                            child: SingleChildScrollView(
+                                              child: Column(
+                                                children: block.times.map(
+                                                  (time) => Padding(
+                                                    padding: const EdgeInsets.only(bottom: 6),
+                                                    child: Container(
+                                                      width: double.infinity,
+                                                      padding: const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 5,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFF98CEF3),
+                                                        borderRadius:
+                                                            BorderRadius.circular(10),
+                                                      ),
+                                                      child: Text(
+                                                        time,
+                                                        textAlign: TextAlign.center,
+                                                        style: const TextStyle(
+                                                          color: Color(0xFF164A75),
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ).toList(),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  if (_availabilitySlots.isNotEmpty) const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -614,7 +868,19 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                   SizedBox(
                     height: 44,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BookTutorPage(
+                              tutorName: _name,
+                              priceLabel: _price,
+                              tutorProfileImage: _profileImage,
+                              availabilitySlots: _availabilitySlots,
+                            ),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF76A96B),
                         foregroundColor: Colors.white,
@@ -726,4 +992,14 @@ class _TutorReview {
   final String reviewerName;
   final String comment;
   final double rating;
+}
+
+class _AvailabilityBlock {
+  const _AvailabilityBlock({
+    required this.dayLabel,
+    required this.times,
+  });
+
+  final String dayLabel;
+  final List<String> times;
 }
