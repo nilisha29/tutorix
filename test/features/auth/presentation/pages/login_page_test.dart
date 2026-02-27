@@ -10,8 +10,6 @@ import 'package:tutorix/features/auth/domain/usecases/register_usecase.dart';
 import 'package:tutorix/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:tutorix/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:tutorix/features/auth/presentation/pages/login_page.dart';
-import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
-import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
 import 'package:tutorix/core/error/failures.dart';
 
 

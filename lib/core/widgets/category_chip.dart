@@ -51,7 +51,18 @@ class CategoryChip extends StatelessWidget {
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: active ? Colors.green : Colors.grey.shade200,
+        gradient: active
+            ? const LinearGradient(
+                colors: [Color(0xFF8AD6FF), Color(0xFFBEE9FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : const LinearGradient(
+                colors: [Color(0xFFE7F6FF), Color(0xFFD8EEFF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        border: Border.all(color: const Color(0xFFB7DBF1)),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Center(
@@ -60,7 +71,7 @@ class CategoryChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: active ? Colors.white : Colors.black87,
+            color: const Color(0xFF1C4A69),
           ),
         ),
       ),

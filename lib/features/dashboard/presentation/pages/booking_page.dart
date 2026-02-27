@@ -41,6 +41,8 @@ class _BookingPageState extends State<BookingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -61,16 +63,18 @@ class _BookingPageState extends State<BookingPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: isDark ? const Color(0xFF111111) : Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: TextField(
                   controller: _searchController,
                   onChanged: (value) => setState(() => _query = value.trim().toLowerCase()),
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     hintText: 'Search tutor',
+                    hintStyle: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
                     border: InputBorder.none,
-                    icon: Icon(Icons.search),
+                    icon: Icon(Icons.search, color: isDark ? Colors.white70 : null),
                   ),
                 ),
               ),
@@ -132,6 +136,7 @@ class _BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -147,17 +152,27 @@ class _BookingCard extends StatelessWidget {
                 children: [
                   Text(
                     booking.tutorName,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${booking.dateLabel} at ${booking.timeLabel}',
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.grey,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${booking.durationMinutes} min • ${booking.paymentMethod}',
-                    style: const TextStyle(color: Colors.black54, fontSize: 12),
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Container(
@@ -176,7 +191,10 @@ class _BookingCard extends StatelessWidget {
             ),
             Text(
               'Rs ${booking.totalPrice.toStringAsFixed(0)}',
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : Colors.black,
+              ),
             ),
           ],
         ),

@@ -1,12 +1,9 @@
-import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tutorix/features/auth/domain/usecases/register_usecase.dart';
 import 'package:tutorix/features/auth/presentation/pages/register_page.dart';
-import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
-import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
 import 'package:tutorix/core/widgets/my_button.dart';
 
 // ---------------- MOCKS ----------------

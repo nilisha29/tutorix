@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/services/storage/user_session_service.dart';
-import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/home_page.dart';
 import 'package:tutorix/features/onboarding/presentation/pages/onboarding_page.dart';
 

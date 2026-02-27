@@ -123,14 +123,16 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF111111) : Colors.white,
         borderRadius: BorderRadius.circular(25), // ✅ same rounded look
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
             blurRadius: 5,
             offset: const Offset(1, 3),
           ),
@@ -141,10 +143,12 @@ class CustomTextField extends StatelessWidget {
         obscureText: obscure,
         keyboardType: keyboardType,
         validator: validator,
+        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
         decoration: InputDecoration(
-          prefixIcon: Icon(icon, color: Colors.grey.shade600),
+          prefixIcon: Icon(icon, color: isDark ? Colors.white70 : Colors.grey.shade600),
           suffixIcon: suffixIcon,
           hintText: hint,
+          hintStyle: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
           border: InputBorder.none, // ✅ important
           contentPadding: const EdgeInsets.symmetric(
             vertical: 16,

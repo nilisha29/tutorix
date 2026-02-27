@@ -40,7 +40,7 @@ class AuthLocalDatasource implements IAuthDatasource {
           userId: user.authId!,
           email: user.email,
            username: user.username ?? user.email.split('@').first,
-          fullName: user.fullName ?? '',
+          fullName: user.fullName,
           phoneNumber: user.phoneNumber,
           address: user.address,
           // firstName: user.firstName,

@@ -276,6 +276,7 @@ class _BookTutorPageState extends State<BookTutorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final availableDates = _availableDateTimes.keys.toList();
     final availableTimes = _timesForSelectedDate();
 
@@ -287,158 +288,228 @@ class _BookTutorPageState extends State<BookTutorPage> {
     final canBook = _selectedDateKey != null && _selectedTime != null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
+      backgroundColor: isDark ? Colors.black : const Color(0xFFF1F3F5),
       appBar: AppBar(
         title: const Text('Select Date & Time'),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(14),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.tutorName,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Rs ${_pricePerHour().toStringAsFixed(0)} / hr',
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
-              ),
-              const SizedBox(height: 14),
-              const Text('Select Date', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              availableDates.isEmpty
-                  ? Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text('No available date from backend'),
-                    )
-                  : Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(10),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF111111) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isDark ? Colors.white24 : const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Icon(Icons.chevron_left, size: 16, color: Colors.black54),
-                              Text(
-                                _monthYearLabel(),
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                              ),
-                              const Icon(Icons.chevron_right, size: 16, color: Colors.black54),
-                            ],
+                          Text(
+                            widget.tutorName,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                           ),
-                          const SizedBox(height: 8),
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Sun', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                              Text('Mon', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                              Text('Tue', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                              Text('Wed', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                              Text('Thu', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                              Text('Fri', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                              Text('Sat', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: availableDates
-                                .map(
-                                  (dateKey) => InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedDateKey = dateKey;
-                                        final times = _timesForSelectedDate();
-                                        _selectedTime = times.isNotEmpty ? times.first : null;
-                                      });
-                                    },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      width: 22,
-                                      height: 22,
-                                      decoration: BoxDecoration(
-                                        color: _selectedDateKey == dateKey
-                                            ? const Color(0xFF0C8EDB)
-                                            : const Color(0xFFF1F5F9),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        _dateChipLabel(dateKey),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: _selectedDateKey == dateKey
-                                              ? Colors.white
-                                              : Colors.black87,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Rs ${_pricePerHour().toStringAsFixed(0)} / hr',
+                            style: const TextStyle(fontSize: 12, color: Colors.black54),
                           ),
                         ],
                       ),
                     ),
-              const SizedBox(height: 14),
-              const Text('Select Time', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.grey.shade200,
+                      backgroundImage: widget.tutorProfileImage.trim().isNotEmpty
+                          ? NetworkImage(widget.tutorProfileImage)
+                          : null,
+                      child: widget.tutorProfileImage.trim().isEmpty
+                          ? const Icon(Icons.person, color: Colors.grey)
+                          : null,
+                      onBackgroundImageError:
+                          widget.tutorProfileImage.trim().isNotEmpty ? (_, __) {} : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text('Select Date', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: availableDates.isEmpty
+                      ? const Text('No available date from backend')
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Icon(Icons.chevron_left, size: 16, color: Colors.black54),
+                                Text(
+                                  _monthYearLabel(),
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                ),
+                                const Icon(Icons.chevron_right, size: 16, color: Colors.black54),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Sun', style: TextStyle(fontSize: 9, color: Colors.black54)),
+                                Text('Mon', style: TextStyle(fontSize: 9, color: Colors.black54)),
+                                Text('Tue', style: TextStyle(fontSize: 9, color: Colors.black54)),
+                                Text('Wed', style: TextStyle(fontSize: 9, color: Colors.black54)),
+                                Text('Thu', style: TextStyle(fontSize: 9, color: Colors.black54)),
+                                Text('Fri', style: TextStyle(fontSize: 9, color: Colors.black54)),
+                                Text('Sat', style: TextStyle(fontSize: 9, color: Colors.black54)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: availableDates
+                                  .map(
+                                    (dateKey) => InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedDateKey = dateKey;
+                                          final times = _timesForSelectedDate();
+                                          _selectedTime = times.isNotEmpty ? times.first : null;
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Container(
+                                        width: 22,
+                                        height: 22,
+                                        decoration: BoxDecoration(
+                                          color: _selectedDateKey == dateKey
+                                              ? const Color(0xFF0C8EDB)
+                                              : const Color(0xFFF1F5F9),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          _dateChipLabel(dateKey),
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: _selectedDateKey == dateKey
+                                                ? Colors.white
+                                                : Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ],
+                        ),
+                ),
+              const SizedBox(height: 10),
+              const Text('Select Time', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
               availableTimes.isEmpty
                   ? const Text('No available time for selected date')
-                  : Wrap(
-                      spacing: 6,
-                      runSpacing: 8,
-                      children: availableTimes
-                          .map(
-                            (time) => _SelectPill(
-                              label: time,
-                              selected: _selectedTime == time,
-                              onTap: () => setState(() => _selectedTime = time),
-                            ),
-                          )
-                          .toList(),
-                    ),
-              const SizedBox(height: 14),
-              const Text('Select Duration', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 8,
-                children: [30, 60, 90]
-                    .map(
-                      (minutes) => _SelectPill(
-                        label: '$minutes min',
-                        selected: _selectedDuration == minutes,
-                        onTap: () => setState(() => _selectedDuration = minutes),
+                  : Container(
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: const Color(0xFFD9E1EA)),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    )
-                    .toList(),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: availableTimes.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 4),
+                        itemBuilder: (context, index) {
+                          final time = availableTimes[index];
+                          final selected = _selectedTime == time;
+                          return InkWell(
+                            onTap: () => setState(() => _selectedTime = time),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 18),
+                              decoration: BoxDecoration(
+                                color: selected ? const Color(0xFF0C8EDB) : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                time,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: selected ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+              const SizedBox(height: 10),
+              const Text('Select Duration', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              Container(
+                height: 30,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: const Color(0xFFD9E1EA)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [30, 60, 90]
+                      .map(
+                        (minutes) => Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _selectedDuration = minutes),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: _selectedDuration == minutes
+                                    ? const Color(0xFF0C8EDB)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '$minutes min',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: _selectedDuration == minutes
+                                      ? Colors.white
+                                      : Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
-              const SizedBox(height: 14),
-              const Text('Summary', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 10),
+              const Text('Summary', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
               const SizedBox(height: 6),
               _summaryRow('Session Rate', 'Rs ${_pricePerHour().toStringAsFixed(0)} / hr'),
               _summaryRow('Date', _formatDateLabel(_selectedDateKey)),
@@ -479,41 +550,8 @@ class _BookTutorPageState extends State<BookTutorPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Open message composer')), 
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      ),
-                      child: const Text('Message'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tutor saved')), 
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF0D85A),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      ),
-                      child: const Text('Save'),
-                    ),
-                  ),
-                ],
-              ),
             ],
+          ),
           ),
         ),
       ),
@@ -536,40 +574,3 @@ class _BookTutorPageState extends State<BookTutorPage> {
   }
 }
 
-class _SelectPill extends StatelessWidget {
-  const _SelectPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF0C8EDB) : Colors.white,
-          border: Border.all(color: const Color(0xFFC9D3E0)),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : Colors.black87,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

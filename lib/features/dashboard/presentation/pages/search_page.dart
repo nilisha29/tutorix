@@ -170,11 +170,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        foregroundColor: isDark ? Colors.white : Colors.black,
         elevation: 0,
         leading: const BackButton(),
         centerTitle: true,
@@ -190,17 +192,21 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Container(
               height: 38,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.black26),
+                border: Border.all(color: isDark ? Colors.white24 : Colors.black26),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: TextField(
                 controller: _searchController,
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                 decoration: InputDecoration(
                   hintText: 'Search',
-                  hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.white60 : Colors.grey.shade500,
+                    fontSize: 13,
+                  ),
                   border: InputBorder.none,
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: const Icon(Icons.tune, size: 20),
+                  prefixIcon: Icon(Icons.search, size: 20, color: isDark ? Colors.white70 : null),
+                  suffixIcon: Icon(Icons.tune, size: 20, color: isDark ? Colors.white70 : null),
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
@@ -224,6 +230,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                                 return _TutorSearchCard(
                                   name: tutor.name,
                                   subject: tutor.subject,
+                                  language: tutor.language,
                                   rating: tutor.rating,
                                   profileImage: _normalizeImageUrl(tutor.profileImage),
                                   price: tutor.price,
@@ -261,6 +268,7 @@ class _TutorSearchCard extends StatelessWidget {
   const _TutorSearchCard({
     required this.name,
     required this.subject,
+    required this.language,
     required this.rating,
     required this.profileImage,
     required this.price,
@@ -269,6 +277,7 @@ class _TutorSearchCard extends StatelessWidget {
 
   final String name;
   final String subject;
+  final String language;
   final String rating;
   final String profileImage;
   final String price;
@@ -276,13 +285,14 @@ class _TutorSearchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasImage = profileImage.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.black12),
+        color: isDark ? const Color(0xFF111111) : Colors.white,
+        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -326,7 +336,20 @@ class _TutorSearchCard extends StatelessWidget {
                   subject,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  language,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -400,6 +423,7 @@ class _TutorListItem {
     required this.id,
     required this.name,
     required this.subject,
+    required this.language,
     required this.rating,
     required this.profileImage,
     required this.price,
@@ -411,6 +435,7 @@ class _TutorListItem {
   final String id;
   final String name;
   final String subject;
+  final String language;
   final String rating;
   final String profileImage;
   final String price;
@@ -423,14 +448,16 @@ class _TutorListItem {
     final fullName = (json['fullName'] ?? json['name'] ?? 'Tutor').toString();
 
     final subjects = json['subjects'];
+    final subjectSingle = json['subject'];
     final languages = json['languages'];
+    final languageSingle = json['language'];
     final tags = json['tags'];
 
     String subjectText = 'Tutor';
     if (subjects is List && subjects.isNotEmpty) {
       subjectText = subjects.map((e) => e.toString()).join(', ');
-    } else if (languages is List && languages.isNotEmpty) {
-      subjectText = languages.map((e) => e.toString()).join(', ');
+    } else if (subjectSingle != null && subjectSingle.toString().trim().isNotEmpty) {
+      subjectText = subjectSingle.toString().trim();
     } else if (tags is List && tags.isNotEmpty) {
       subjectText = tags.map((e) => e.toString()).join(', ');
     } else if (json['bio'] != null && json['bio'].toString().trim().isNotEmpty) {
@@ -459,16 +486,26 @@ class _TutorListItem {
     final subjectList = <String>[];
     if (subjects is List) {
       subjectList.addAll(subjects.map((e) => e.toString()));
-    } else if (languages is List) {
-      subjectList.addAll(languages.map((e) => e.toString()));
+    } else if (subjectSingle != null && subjectSingle.toString().trim().isNotEmpty) {
+      subjectList.add(subjectSingle.toString().trim());
     } else if (tags is List) {
       subjectList.addAll(tags.map((e) => e.toString()));
+    } else if (languages is List) {
+      subjectList.addAll(languages.map((e) => e.toString()));
+    }
+
+    String languageText = 'Language: N/A';
+    if (languages is List && languages.isNotEmpty) {
+      languageText = 'Language: ${languages.map((e) => e.toString()).join(', ')}';
+    } else if (languageSingle != null && languageSingle.toString().trim().isNotEmpty) {
+      languageText = 'Language: ${languageSingle.toString().trim()}';
     }
 
     return _TutorListItem(
       id: id,
       name: fullName,
       subject: subjectText,
+      language: languageText,
       rating: ratingNum.toStringAsFixed(1),
       profileImage: image,
       price: 'Rs. ${priceNum.toStringAsFixed(0)}/hr',

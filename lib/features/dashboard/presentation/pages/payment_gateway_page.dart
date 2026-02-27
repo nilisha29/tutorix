@@ -31,9 +31,10 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage> {
   Widget build(BuildContext context) {
     final isKhalti = widget.method.toLowerCase().contains('khalti');
     final primaryColor = isKhalti ? const Color(0xFF5C2D91) : const Color(0xFF1D9E63);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
+      backgroundColor: isDark ? Colors.black : const Color(0xFFF5F6F8),
       appBar: AppBar(
         title: Text('${widget.method} Payment'),
         centerTitle: true,
@@ -46,9 +47,11 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF111111) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: isDark ? Colors.white24 : const Color(0xFFE2E8F0),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +63,10 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage> {
                   const SizedBox(height: 6),
                   Text(
                     'Amount: Rs ${widget.booking.totalPrice.toStringAsFixed(0)}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(

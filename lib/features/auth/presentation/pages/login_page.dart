@@ -216,13 +216,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/app/routes/app_routes.dart';
 import 'package:tutorix/features/auth/presentation/pages/register_page.dart';
+import 'package:tutorix/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/bottom_screen_layout.dart';
 import 'package:tutorix/core/widgets/custom_text_field.dart';
 import 'package:tutorix/core/widgets/my_button.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
 import 'package:tutorix/core/utils/snackbar_utils.dart';
-import 'dart:io';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -258,9 +258,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     AppRoutes.push(context, const RegisterPage());
   }
 
+  void _openResetPasswordPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResetPasswordPage(initialEmail: _emailController.text.trim()),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Listen to auth state changes
     ref.listen<AuthState>(authViewModelProvider, (previous, next) {
@@ -273,7 +283,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFD9F2D5),
+      backgroundColor: isDark ? Colors.black : const Color(0xFFD9F2D5),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -296,10 +306,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 5),
-                  const Center(
+                  Center(
                     child: Text(
                       "Sign in to your Tutorix account",
-                      style: TextStyle(fontSize: 20),
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 25),
@@ -337,9 +350,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   const SizedBox(height: 20),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: Text(
-                      "Forgot your password?",
-                      style: TextStyle(color: Colors.black87, fontSize: 14),
+                    child: GestureDetector(
+                      onTap: _openResetPasswordPage,
+                      child: Text(
+                        "Forgot your password?",
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontSize: 14,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 50),
@@ -355,7 +375,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Container(
                     height: 55,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? const Color(0xFF111111) : Colors.white,
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Row(
@@ -363,7 +383,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       children: [
                         Image.asset("assets/images/google.png", height: 24),
                         const SizedBox(width: 12),
-                        const Text("Sign in with Google", style: TextStyle(fontSize: 20)),
+                        Text(
+                          "Sign in with Google",
+                          style: TextStyle(fontSize: 20, color: isDark ? Colors.white : Colors.black),
+                        ),
                       ],
                     ),
                   ),
@@ -372,12 +395,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Don’t have an account?", style: TextStyle(color: Colors.black, fontSize: 16)),
+                      Text(
+                        "Don’t have an account?",
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16),
+                      ),
                       TextButton(
                         onPressed: _navigateToSignup,
-                        child: const Text(
+                        child: Text(
                           "Create Account",
-                          style: TextStyle(color: Colors.blue, fontSize: 16, decoration: TextDecoration.underline),
+                          style: TextStyle(
+                            color: isDark ? Colors.lightBlueAccent : Colors.blue,
+                            fontSize: 16,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ],

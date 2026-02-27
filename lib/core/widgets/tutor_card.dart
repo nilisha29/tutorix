@@ -144,11 +144,13 @@ class TutorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasImage = profileImageUrl != null && profileImageUrl!.isNotEmpty;
 
     return SizedBox(
       width: 160, // ⭐ REQUIRED for horizontal ListView
       child: Card(
+        color: isDark ? const Color(0xFF111111) : null,
         margin: const EdgeInsets.only(right: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -174,9 +176,10 @@ class TutorCard extends StatelessWidget {
               Text(
                 name,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -187,7 +190,7 @@ class TutorCard extends StatelessWidget {
               Text(
                 subject,
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: isDark ? Colors.white70 : Colors.grey.shade600,
                   fontSize: 12,
                 ),
                 maxLines: 1,

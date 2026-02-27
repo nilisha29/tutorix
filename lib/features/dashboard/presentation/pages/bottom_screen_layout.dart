@@ -41,9 +41,13 @@ class _BottomScreenLayoutState extends State<BottomScreenLayout> {
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           currentIndex: _selectedIndex,
-          backgroundColor: Colors.blueGrey,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? Colors.black
+              : Colors.blueGrey,
           selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.black,
+          unselectedItemColor: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white70
+              : Colors.black,
           onTap: (index) => setState(() => _selectedIndex = index),
           items: const [
             BottomNavigationBarItem(

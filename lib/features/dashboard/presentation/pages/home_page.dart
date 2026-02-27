@@ -847,6 +847,9 @@ import 'package:tutorix/core/widgets/category_chip.dart';
 import 'package:tutorix/core/widgets/tutor_card.dart';
 import 'package:tutorix/core/widgets/recommended_card.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/category_tutors_page.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/messages_inbox_page.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/search_page.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/tutor_profile_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -861,6 +864,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   String? _tutorError;
   List<_HomeTutorItem> _topTutors = const [];
   List<_HomeTutorItem> _recommendedTutors = const [];
+  List<String> _backendSubjects = const [];
 
   @override
   void initState() {
@@ -893,6 +897,16 @@ class _HomePageState extends ConsumerState<HomePage> {
         if (_recommendedTutors.isEmpty) {
           _recommendedTutors = allTutors.take(4).toList();
         }
+        final subjects = <String>{};
+        for (final tutor in allTutors) {
+          for (final subject in tutor.subjectList) {
+            final normalized = subject.trim();
+            if (normalized.isNotEmpty) {
+              subjects.add(normalized);
+            }
+          }
+        }
+        _backendSubjects = subjects.take(12).toList();
         _loadingTutors = false;
       });
     } on TimeoutException {
@@ -992,6 +1006,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Determine profile image
     final profilePath = authState.profilePicture ?? authState.authEntity?.profilePicture;
@@ -1027,7 +1042,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? Colors.black : Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -1043,35 +1058,64 @@ class _HomePageState extends ConsumerState<HomePage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Hello,",
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Colors.white70 : Colors.grey,
+                        ),
                       ),
                       Text(
                         authState.authEntity?.fullName ?? "User",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
                     ],
                   ),
                   const Spacer(),
-                  const Icon(Icons.search, size: 26),
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SearchPage()),
+                      );
+                    },
+                    child: Icon(
+                      Icons.search,
+                      size: 26,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
                   const SizedBox(width: 16),
-                  const Icon(Icons.notifications_none, size: 26),
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MessagesInboxPage()),
+                      );
+                    },
+                    child: Icon(
+                      Icons.message_outlined,
+                      size: 26,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
                 ],
               ),
 
               const SizedBox(height: 24),
 
               // 🧠 TITLE
-              const Text(
+              Text(
                 "Find your best\ntutor and teacher",
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   height: 1.2,
+                  color: isDark ? Colors.white : Colors.black,
                 ),
               ),
 
@@ -1082,12 +1126,30 @@ class _HomePageState extends ConsumerState<HomePage> {
                 height: 42,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  children: const [
-                    CategoryChip(title: "Graphic design", active: true),
-                    CategoryChip(title: "Biology", active: false),
-                    CategoryChip(title: "Mathematics", active: false),
-                    CategoryChip(title: "English", active: false),
-                  ],
+                  children: _backendSubjects.isEmpty
+                      ? const [
+                          CategoryChip(title: "No subjects", active: false),
+                        ]
+                      : _backendSubjects
+                          .map(
+                            (subject) => GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CategoryTutorsPage(
+                                      categoryName: subject,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: CategoryChip(
+                                title: subject,
+                                active: false,
+                              ),
+                            ),
+                          )
+                          .toList(),
                 ),
               ),
 
@@ -1144,14 +1206,22 @@ class _HomePageState extends ConsumerState<HomePage> {
               // 👍 RECOMMENDED
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     "Recommended",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  Text(
-                    "View all",
-                    style: TextStyle(color: Colors.green),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SearchPage()),
+                      );
+                    },
+                    child: const Text(
+                      "View all",
+                      style: TextStyle(color: Colors.green),
+                    ),
                   ),
                 ],
               ),
@@ -1237,16 +1307,19 @@ class _HomeTutorItem {
     final id = (json['_id'] ?? json['id'] ?? '').toString();
     final name = (json['fullName'] ?? json['name'] ?? 'Tutor').toString();
     final subjects = json['subjects'];
+    final subjectSingle = json['subject'];
     final languages = json['languages'];
     final tags = json['tags'];
 
     final subjectList = <String>[];
     if (subjects is List && subjects.isNotEmpty) {
       subjectList.addAll(subjects.map((e) => e.toString()));
-    } else if (languages is List && languages.isNotEmpty) {
-      subjectList.addAll(languages.map((e) => e.toString()));
+    } else if (subjectSingle != null && subjectSingle.toString().trim().isNotEmpty) {
+      subjectList.add(subjectSingle.toString().trim());
     } else if (tags is List && tags.isNotEmpty) {
       subjectList.addAll(tags.map((e) => e.toString()));
+    } else if (languages is List && languages.isNotEmpty) {
+      subjectList.addAll(languages.map((e) => e.toString()));
     }
 
     final subjectText = subjectList.isNotEmpty

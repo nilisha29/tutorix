@@ -169,8 +169,10 @@ class _CategoryTutorsPageState extends ConsumerState<CategoryTutorsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
         title: Text('${widget.categoryName} Tutors'),
         centerTitle: true,
@@ -212,8 +214,8 @@ class _CategoryTutorsPageState extends ConsumerState<CategoryTutorsPage> {
                         return Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: Colors.black12),
+                            color: isDark ? const Color(0xFF111111) : Colors.white,
+                            border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -266,9 +268,9 @@ class _CategoryTutorsPageState extends ConsumerState<CategoryTutorsPage> {
                                       tutor.subject,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
-                                        color: Colors.black87,
+                                        color: isDark ? Colors.white : Colors.black87,
                                       ),
                                     ),
                                     const SizedBox(height: 14),

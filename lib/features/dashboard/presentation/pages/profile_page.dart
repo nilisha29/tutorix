@@ -447,9 +447,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tutorix/app/theme/theme_mode_provider.dart';
 import 'package:tutorix/features/auth/presentation/pages/login_page.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/change_password_page.dart';
 import 'package:tutorix/features/editprofile/presentation/pages/edit_profile.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/saved_tutors_page.dart';
 
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -469,6 +472,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
     final authNotifier = ref.read(authViewModelProvider.notifier);
+    final themeMode = ref.watch(themeModeProvider);
+    final themeNotifier = ref.read(themeModeProvider.notifier);
 
     final profilePath =
         authState.profilePicture ?? authState.authEntity?.profilePicture;
@@ -518,7 +523,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -564,23 +569,37 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ListTile(
               leading: const Icon(Icons.lock),
               title: const Text("Change Password"),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ChangePasswordPage(),
+                  ),
+                );
+              },
             ),
 
             ListTile(
-              leading: const Icon(Icons.security),
-              title: const Text("Privacy & Security"),
-              onTap: () {},
+              leading: const Icon(Icons.bookmark),
+              title: const Text("Saved Tutors"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SavedTutorsPage(),
+                  ),
+                );
+              },
             ),
 
-             SwitchListTile(
+            SwitchListTile(
               secondary: const Icon(Icons.dark_mode),
               title: const Text("Dark Mode"),
-              value: false,
-              onChanged: (value) {},
+              value: themeMode == ThemeMode.dark,
+              onChanged: (value) {
+                themeNotifier.toggleDarkMode(value);
+              },
             ),
-
-            // const Spacer(),
 
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),

@@ -1,7 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:tutorix/core/error/failures.dart';
 import 'package:tutorix/features/auth/domain/entities/auth_entity.dart';
 import 'package:tutorix/features/auth/domain/repositories/auth_repository.dart';
 import 'package:tutorix/features/auth/domain/usecases/login_usecase.dart';

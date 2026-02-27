@@ -67,17 +67,18 @@ class RecommendedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasImage = profileImageUrl != null && profileImageUrl!.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF111111) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Colors.black12,
+            color: isDark ? Colors.black45 : Colors.black12,
             blurRadius: 6,
             offset: Offset(0, 3),
           ),
@@ -103,9 +104,10 @@ class RecommendedCard extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -116,7 +118,7 @@ class RecommendedCard extends StatelessWidget {
                 Text(
                   subject,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.white70 : Colors.grey.shade600,
                     fontSize: 13,
                   ),
                   maxLines: 1,
@@ -129,7 +131,13 @@ class RecommendedCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.star, size: 14, color: Colors.orange),
                     const SizedBox(width: 4),
-                    Text(rating, style: const TextStyle(fontSize: 12)),
+                    Text(
+                      rating,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
                     const SizedBox(width: 10),
                     Text(
                       price,

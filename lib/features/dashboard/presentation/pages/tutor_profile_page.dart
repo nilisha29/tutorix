@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/book_tutor_page.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/saved_tutor_store.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/tutor_message_page.dart';
 
 class TutorProfilePage extends ConsumerStatefulWidget {
   const TutorProfilePage({
@@ -172,15 +174,18 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
 
     final subjectList = <String>[];
     final subjects = data['subjects'];
+    final subjectSingle = data['subject'];
     final languages = data['languages'];
     final tags = data['tags'];
 
     if (subjects is List && subjects.isNotEmpty) {
       subjectList.addAll(subjects.map((e) => e.toString()));
-    } else if (languages is List && languages.isNotEmpty) {
-      subjectList.addAll(languages.map((e) => e.toString()));
+    } else if (subjectSingle != null && subjectSingle.toString().trim().isNotEmpty) {
+      subjectList.add(subjectSingle.toString().trim());
     } else if (tags is List && tags.isNotEmpty) {
       subjectList.addAll(tags.map((e) => e.toString()));
+    } else if (languages is List && languages.isNotEmpty) {
+      subjectList.addAll(languages.map((e) => e.toString()));
     }
 
     final reviewsRaw = data['reviews'];
@@ -206,15 +211,25 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
 
     final image = (data['profileImage'] ?? data['avatar'] ?? '').toString();
 
+    final languageText = languages is List
+        ? languages.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).join(', ')
+        : (data['language'] ?? '').toString();
+    final tagText = tags is List
+        ? tags.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).join(', ')
+        : '';
+    final educationText = (data['education'] ?? data['degree'] ?? data['qualification'] ?? '')
+        .toString();
+
     final extras = <String, String>{
+      if (educationText.isNotEmpty) 'Education': educationText,
+      if (tagText.isNotEmpty) 'Tags': tagText,
+      if (languageText.isNotEmpty) 'Languages': languageText,
       if ((data['email'] ?? '').toString().isNotEmpty)
         'Email': (data['email']).toString(),
       if ((data['phoneNumber'] ?? '').toString().isNotEmpty)
         'Phone': (data['phoneNumber']).toString(),
       if ((data['address'] ?? '').toString().isNotEmpty)
         'Address': (data['address']).toString(),
-      if ((data['qualification'] ?? '').toString().isNotEmpty)
-        'Qualification': (data['qualification']).toString(),
     };
 
     _name = (data['fullName'] ?? data['name'] ?? _name).toString();
@@ -532,12 +547,15 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isSaved = SavedTutorStore.isSaved(widget.tutorId);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
+      backgroundColor: isDark ? Colors.black : const Color(0xFFF3F6F9),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F7F7),
+        backgroundColor: isDark ? Colors.black : const Color(0xFFF3F6F9),
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: isDark ? Colors.white : Colors.black,
         centerTitle: true,
         title: const Text(
           'Tutor Profile',
@@ -554,14 +572,24 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.black12),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFE8F6FC), Colors.white],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x14000000),
+                          blurRadius: 16,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
                       children: [
                         CircleAvatar(
-                          radius: 42,
+                          radius: 50,
                           backgroundColor: Colors.grey.shade300,
                           backgroundImage:
                               _profileImage.isNotEmpty ? NetworkImage(_profileImage) : null,
@@ -575,7 +603,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                         Text(
                           _name,
                           style: const TextStyle(
-                            fontSize: 28,
+                            fontSize: 46,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -585,30 +613,99 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                           children: [
                             const Icon(Icons.star, size: 16, color: Color(0xFFF4B400)),
                             const SizedBox(width: 4),
-                            Text('$_rating (125 reviews)'),
+                            Text(
+                              '$_rating (125 reviews)',
+                              style: const TextStyle(fontSize: 12),
+                            ),
                           ],
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: (_subjects.isNotEmpty ? _subjects : _subject.split(','))
+                              .take(4)
+                              .map(
+                                (item) => Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD9EDF3),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Text(
+                                    item.trim(),
+                                    style: const TextStyle(
+                                      color: Color(0xFF2E6687),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: (_subjects.isNotEmpty ? _subjects : _subject.split(','))
-                        .take(4)
-                        .map(
-                          (item) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.black26),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TutorMessagePage(
+                                  tutorId: widget.tutorId,
+                                  tutorName: _name,
+                                  tutorImage: _profileImage,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.chat_bubble_outline),
+                          label: const Text('Message'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(22),
                             ),
-                            child: Text(item.trim()),
                           ),
-                        )
-                        .toList(),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            SavedTutorStore.toggleSaved(
+                              SavedTutor(
+                                tutorId: widget.tutorId,
+                                name: _name,
+                                subject: _subject,
+                                rating: _rating,
+                                imageUrl: _profileImage,
+                                price: _price,
+                              ),
+                            );
+                            setState(() {});
+                          },
+                          icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border),
+                          label: Text(isSaved ? 'Saved' : 'Save'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                            backgroundColor:
+                                isSaved ? const Color(0xFFF4C430) : Colors.white,
+                            foregroundColor: isSaved ? Colors.black : Colors.black87,
+                            elevation: 0,
+                            side: const BorderSide(color: Color(0xFFD1D5DB)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(22),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -634,8 +731,14 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.black12),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x12000000),
+                            blurRadius: 14,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -663,20 +766,26 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                         return Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE6F5F1),
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFB8E8DE)),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x12000000),
+                                blurRadius: 14,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
                                 'Availability',
-                                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
+                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 10),
                               SizedBox(
-                                height: 185,
+                                height: 170,
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: availabilityBlocks.length,
@@ -684,10 +793,10 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                                   itemBuilder: (context, index) {
                                     final block = availabilityBlocks[index];
                                     return Container(
-                                      width: 126,
+                                      width: 136,
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFCBEAE3),
+                                        color: const Color(0xFFE6F4F8),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Column(
@@ -698,7 +807,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                                             maxLines: 3,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
-                                              color: Color(0xFF567F9F),
+                                              color: Color(0xFF2A6289),
                                               fontWeight: FontWeight.w700,
                                               fontSize: 12,
                                             ),
@@ -717,7 +826,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                                                         vertical: 5,
                                                       ),
                                                       decoration: BoxDecoration(
-                                                        color: const Color(0xFF98CEF3),
+                                                        color: const Color(0xFFB7DAF4),
                                                         borderRadius:
                                                             BorderRadius.circular(10),
                                                       ),
@@ -725,8 +834,8 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                                                         time,
                                                         textAlign: TextAlign.center,
                                                         style: const TextStyle(
-                                                          color: Color(0xFF164A75),
-                                                          fontSize: 16,
+                                                          color: Color(0xFF1B4E76),
+                                                          fontSize: 14,
                                                           fontWeight: FontWeight.w500,
                                                         ),
                                                       ),
@@ -752,8 +861,14 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x12000000),
+                          blurRadius: 14,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -772,8 +887,14 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x12000000),
+                          blurRadius: 14,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -795,8 +916,14 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x12000000),
+                          blurRadius: 14,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -815,9 +942,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                                 icon: Icon(
-                                  star <= _selectedRating
-                                      ? Icons.star
-                                      : Icons.star_border,
+                                  star <= _selectedRating ? Icons.star : Icons.star_border,
                                   color: const Color(0xFFF4B400),
                                 ),
                                 onPressed: () {
@@ -882,15 +1007,31 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF76A96B),
-                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(22),
                         ),
                       ),
-                      child: const Text(
-                        'Book Tutor',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(22),
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF4FB3A5),
+                              Color(0xFFA2CF7B),
+                            ],
+                          ),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Book Tutor',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -917,19 +1058,28 @@ class _InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x12000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Text(title, style: const TextStyle(fontSize: 14)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 14, color: Colors.black54),
+          ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -944,38 +1094,49 @@ class _ReviewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: Colors.grey.shade300,
-                child: const Icon(Icons.person, size: 14, color: Colors.black54),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  review.reviewerName,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-              const Icon(Icons.star, size: 14, color: Color(0xFFF4B400)),
-              const SizedBox(width: 3),
-              Text(review.rating.toStringAsFixed(1)),
-            ],
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.grey.shade300,
+            child: const Icon(Icons.person, size: 16, color: Colors.black54),
           ),
-          const SizedBox(height: 6),
-          Text(review.comment),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        review.reviewerName,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.star, size: 12, color: Color(0xFFF4B400)),
+                    const SizedBox(width: 2),
+                    Text(
+                      review.rating.toStringAsFixed(1),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  review.comment,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -31,8 +31,10 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: isDark ? Colors.black : const Color(0xFFF3F4F6),
       appBar: AppBar(
         title: const Text('Confirm and Pay'),
         centerTitle: true,
@@ -45,9 +47,11 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF111111) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: isDark ? Colors.white24 : const Color(0xFFE2E8F0),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,7 +71,10 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
                             const SizedBox(height: 2),
                             Text(
                               '${widget.dateLabel}, ${widget.timeLabel}',
-                              style: const TextStyle(fontSize: 10, color: Colors.black54),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                              ),
                             ),
                           ],
                         ),
@@ -84,11 +91,15 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
               ),
             ),
             const SizedBox(height: 14),
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Choose Payment Method',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -139,19 +150,31 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
   }
 
   Widget _paymentTile(String method) {
-    final selected = _selectedPayment == method;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF111111)
+            : Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD1D5DB)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white24
+              : const Color(0xFFD1D5DB),
+        ),
       ),
       child: ListTile(
         minTileHeight: 52,
         contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-        title: Text(method, style: const TextStyle(fontSize: 12)),
+        title: Text(
+          method,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : Colors.black,
+          ),
+        ),
         trailing: Radio<String>(
           value: method,
           groupValue: _selectedPayment,
@@ -166,16 +189,26 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
   }
 
   Widget _summaryRow(String key, String value, {bool isBold = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Expanded(child: Text(key, style: const TextStyle(fontSize: 11))),
+          Expanded(
+            child: Text(
+              key,
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.white70 : Colors.black,
+              ),
+            ),
+          ),
           Text(
             value,
             style: TextStyle(
               fontSize: 11,
               fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black,
             ),
           ),
         ],
@@ -192,10 +225,11 @@ class _TutorAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (imageUrl.trim().isEmpty) {
-      return const CircleAvatar(
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return CircleAvatar(
         radius: 18,
-        backgroundColor: Color(0xFFE2E8F0),
-        child: Icon(Icons.person, color: Colors.black54),
+        backgroundColor: isDark ? const Color(0xFF1B1B1B) : const Color(0xFFE2E8F0),
+        child: Icon(Icons.person, color: isDark ? Colors.white70 : Colors.black54),
       );
     }
 
@@ -206,10 +240,11 @@ class _TutorAvatar extends StatelessWidget {
         height: 36,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) {
-          return const CircleAvatar(
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return CircleAvatar(
             radius: 18,
-            backgroundColor: Color(0xFFE2E8F0),
-            child: Icon(Icons.person, color: Colors.black54),
+            backgroundColor: isDark ? const Color(0xFF1B1B1B) : const Color(0xFFE2E8F0),
+            child: Icon(Icons.person, color: isDark ? Colors.white70 : Colors.black54),
           );
         },
       ),
