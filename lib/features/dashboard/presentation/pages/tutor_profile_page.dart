@@ -856,6 +856,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                         );
                       },
                     ),
+                    
                   if (_availabilitySlots.isNotEmpty) const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -882,7 +883,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(12),

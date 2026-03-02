@@ -170,6 +170,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         .toList();
   }
 
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
