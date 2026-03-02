@@ -74,6 +74,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
 
+
   Future<Response<dynamic>> _requestTutors(ApiClient apiClient) async {
     final candidatePaths = <String>[
       '/tutors',
@@ -106,6 +107,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         rethrow;
       }
     }
+
 
     throw lastError ??
         DioException(

@@ -882,6 +882,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                       ],
                     ),
                   ),
+                  
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -990,7 +991,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 14),
                   SizedBox(
                     height: 44,
