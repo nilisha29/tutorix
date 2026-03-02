@@ -18,8 +18,8 @@ class ApiEndpoints {
 
 
     // Configuration
-  static const bool isPhysicalDevice = false;
-  static const String _ipAddress = '192.168.1.1';
+  static const bool isPhysicalDevice = true;
+  static const String _ipAddress = '192.168.1.9';
   static const int _port = 5050;
 
   // Base URLs
@@ -66,3 +66,4 @@ class ApiEndpoints {
   static String commentsByItem(String itemId) => '/comments/item/$itemId';
   static String commentLike(String id) => '/comments/$id/like';
 }
+

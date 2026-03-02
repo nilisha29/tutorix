@@ -1399,6 +1399,10 @@ class AuthViewModel extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
+
+     print("BASE URL: ${ApiEndpoints.baseUrl}");
+  print("LOGIN URL: ${ApiEndpoints.baseUrl + ApiEndpoints.userLogin}");
+  
     state = state.copyWith(status: AuthStatus.loading);
 
     try {

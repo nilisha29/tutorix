@@ -453,6 +453,8 @@ import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dar
 import 'package:tutorix/features/dashboard/presentation/pages/change_password_page.dart';
 import 'package:tutorix/features/editprofile/presentation/pages/edit_profile.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/saved_tutors_page.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/sensors_page.dart';
+
 
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -587,6 +589,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const SavedTutorsPage(),
+                  ),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.sensors),
+              title: const Text("Sensors"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SensorsPage(),
                   ),
                 );
               },

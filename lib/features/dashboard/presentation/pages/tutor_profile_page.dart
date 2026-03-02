@@ -925,6 +925,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                         ),
                       ],
                     ),
+
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -989,6 +990,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                       ],
                     ),
                   ),
+                  
                   const SizedBox(height: 14),
                   SizedBox(
                     height: 44,
