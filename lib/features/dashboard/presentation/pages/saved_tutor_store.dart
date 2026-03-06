@@ -36,4 +36,25 @@ class SavedTutorStore {
     }
     savedTutors.value = current;
   }
+
+  static void setSavedTutors(List<SavedTutor> tutors) {
+    savedTutors.value = List<SavedTutor>.from(tutors);
+  }
+
+  static void removeByTutorId(String tutorId) {
+    final current = List<SavedTutor>.from(savedTutors.value)
+      ..removeWhere((item) => item.tutorId == tutorId);
+    savedTutors.value = current;
+  }
+
+  static void upsert(SavedTutor tutor) {
+    final current = List<SavedTutor>.from(savedTutors.value);
+    final index = current.indexWhere((item) => item.tutorId == tutor.tutorId);
+    if (index >= 0) {
+      current[index] = tutor;
+    } else {
+      current.insert(0, tutor);
+    }
+    savedTutors.value = current;
+  }
 }
