@@ -20,6 +20,10 @@ class MessageThreadsStore {
   static final ValueNotifier<List<MessageThread>> threads =
       ValueNotifier<List<MessageThread>>(<MessageThread>[]);
 
+  static void setThreads(List<MessageThread> value) {
+    threads.value = List<MessageThread>.from(value);
+  }
+
   static void upsertThread({
     required String tutorId,
     required String tutorName,
