@@ -56,6 +56,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
   final TextEditingController _reviewController = TextEditingController();
   int _selectedRating = 5;
   bool _submittingReview = false;
+  bool _togglingSaved = false;
 
   @override
   void initState() {
@@ -109,6 +110,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
         if (!mounted) return;
 
         _hydrateFromData(data);
+        await _fetchReviewsFromBackend();
         setState(() {
           _isLoading = false;
           _error = null;
@@ -355,8 +357,22 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
 
   String _normalizeImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
-    if (url.startsWith('http://localhost:') && Platform.isAndroid) {
-      return url.replaceFirst('http://localhost:', 'http://10.0.2.2:');
+    if (url.startsWith('http://localhost:') ||
+        url.startsWith('https://localhost:') ||
+        url.startsWith('http://127.0.0.1:') ||
+        url.startsWith('https://127.0.0.1:')) {
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+        final base = Uri.parse(ApiEndpoints.serverUrl);
+        return Uri(
+          scheme: base.scheme,
+          host: base.host,
+          port: base.port,
+          path: uri.path,
+          query: uri.query.isEmpty ? null : uri.query,
+        ).toString();
+      }
+      return '';
     }
     if (url.startsWith('http')) return url;
     return '${ApiEndpoints.mediaServerUrl}$url';
@@ -411,6 +427,62 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
         .where((entry) => !_isMetaOrIdLabel(entry.key))
         .map((entry) => _AvailabilityBlock(dayLabel: entry.key, times: entry.value))
         .toList();
+  }
+
+  Future<void> _fetchReviewsFromBackend() async {
+    final apiClient = ref.read(apiClientProvider);
+    final endpointCandidates = <_EndpointAttempt>[
+      _EndpointAttempt(path: '/tutors/${widget.tutorId}/reviews'),
+      _EndpointAttempt(path: '/reviews', query: {'tutorId': widget.tutorId}),
+      _EndpointAttempt(path: '/reviews/tutor/${widget.tutorId}'),
+    ];
+
+    for (final endpoint in endpointCandidates) {
+      try {
+        final response = await apiClient.get(
+          endpoint.path,
+          queryParameters: endpoint.query,
+        );
+        final rows = _extractList(response.data);
+        final parsed = <_TutorReview>[];
+        for (final item in rows) {
+          if (item is! Map) continue;
+          final map = Map<String, dynamic>.from(item as Map);
+          final ratingRaw = map['rating'] ?? map['stars'] ?? 0;
+          final rating = ratingRaw is num
+              ? ratingRaw.toDouble()
+              : double.tryParse(ratingRaw.toString()) ?? 0;
+          parsed.add(
+            _TutorReview(
+              reviewerName: (map['reviewerName'] ?? map['name'] ?? map['studentName'] ?? 'User')
+                  .toString(),
+              comment: (map['comment'] ?? map['review'] ?? map['content'] ?? '').toString(),
+              rating: rating,
+            ),
+          );
+        }
+        if (parsed.isNotEmpty) {
+          _reviews = parsed;
+        }
+        return;
+      } on DioException catch (e) {
+        final code = e.response?.statusCode ?? 0;
+        if (code == 404 || code == 400) {
+          continue;
+        }
+        return;
+      }
+    }
+  }
+
+  List<dynamic> _extractList(dynamic raw) {
+    if (raw is Map && raw['data'] is List) {
+      return raw['data'] as List<dynamic>;
+    }
+    if (raw is List) {
+      return raw;
+    }
+    return const [];
   }
 
   Future<void> _submitReview() async {
@@ -493,6 +565,11 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
           _selectedRating = 5;
         });
 
+        await _fetchReviewsFromBackend();
+        if (mounted) {
+          setState(() {});
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Review submitted successfully')),
         );
@@ -541,6 +618,93 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
         setState(() {
           _submittingReview = false;
         });
+      }
+    }
+  }
+
+  Future<void> _toggleSavedTutor() async {
+    if (_togglingSaved) return;
+    final currentlySaved = SavedTutorStore.isSaved(widget.tutorId);
+    setState(() => _togglingSaved = true);
+
+    final apiClient = ref.read(apiClientProvider);
+    try {
+      if (currentlySaved) {
+        final removeCandidates = <String>[
+          '/saved-tutors/${widget.tutorId}',
+          '/savedtutors/${widget.tutorId}',
+          '/saved-tutor/${widget.tutorId}',
+        ];
+
+        for (final endpoint in removeCandidates) {
+          try {
+            await apiClient.delete(endpoint);
+            SavedTutorStore.removeByTutorId(widget.tutorId);
+            if (mounted) setState(() {});
+            return;
+          } on DioException catch (e) {
+            final code = e.response?.statusCode ?? 0;
+            if (code == 404 || code == 400) {
+              continue;
+            }
+            rethrow;
+          }
+        }
+
+        SavedTutorStore.removeByTutorId(widget.tutorId);
+        if (mounted) setState(() {});
+        return;
+      }
+
+      final saveCandidates = <String>[
+        '/saved-tutors',
+        '/savedtutors',
+        '/saved-tutor',
+      ];
+
+      for (final endpoint in saveCandidates) {
+        try {
+          await apiClient.post(endpoint, data: {'tutorId': widget.tutorId});
+          SavedTutorStore.upsert(
+            SavedTutor(
+              tutorId: widget.tutorId,
+              name: _name,
+              subject: _subject,
+              rating: _rating,
+              imageUrl: _profileImage,
+              price: _price,
+            ),
+          );
+          if (mounted) setState(() {});
+          return;
+        } on DioException catch (e) {
+          final code = e.response?.statusCode ?? 0;
+          if (code == 404 || code == 400) {
+            continue;
+          }
+          rethrow;
+        }
+      }
+
+      SavedTutorStore.upsert(
+        SavedTutor(
+          tutorId: widget.tutorId,
+          name: _name,
+          subject: _subject,
+          rating: _rating,
+          imageUrl: _profileImage,
+          price: _price,
+        ),
+      );
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update saved tutor on backend')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _togglingSaved = false);
       }
     }
   }
@@ -677,19 +841,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            SavedTutorStore.toggleSaved(
-                              SavedTutor(
-                                tutorId: widget.tutorId,
-                                name: _name,
-                                subject: _subject,
-                                rating: _rating,
-                                imageUrl: _profileImage,
-                                price: _price,
-                              ),
-                            );
-                            setState(() {});
-                          },
+                          onPressed: _togglingSaved ? null : _toggleSavedTutor,
                           icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border),
                           label: Text(isSaved ? 'Saved' : 'Save'),
                           style: ElevatedButton.styleFrom(
@@ -1002,6 +1154,7 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => BookTutorPage(
+                              tutorId: widget.tutorId,
                               tutorName: _name,
                               priceLabel: _price,
                               tutorProfileImage: _profileImage,
@@ -1167,4 +1320,11 @@ class _AvailabilityBlock {
 
   final String dayLabel;
   final List<String> times;
+}
+
+class _EndpointAttempt {
+  const _EndpointAttempt({required this.path, this.query});
+
+  final String path;
+  final Map<String, dynamic>? query;
 }

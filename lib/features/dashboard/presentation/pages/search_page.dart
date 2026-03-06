@@ -143,8 +143,22 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   String _normalizeImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
-    if (url.startsWith('http://localhost:') && Platform.isAndroid) {
-      return url.replaceFirst('http://localhost:', 'http://10.0.2.2:');
+    if (url.startsWith('http://localhost:') ||
+        url.startsWith('https://localhost:') ||
+        url.startsWith('http://127.0.0.1:') ||
+        url.startsWith('https://127.0.0.1:')) {
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+        final base = Uri.parse(ApiEndpoints.serverUrl);
+        return Uri(
+          scheme: base.scheme,
+          host: base.host,
+          port: base.port,
+          path: uri.path,
+          query: uri.query.isEmpty ? null : uri.query,
+        ).toString();
+      }
+      return '';
     }
     if (url.startsWith('http')) return url;
     return '${ApiEndpoints.mediaServerUrl}$url';
