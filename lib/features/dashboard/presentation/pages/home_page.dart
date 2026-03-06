@@ -991,8 +991,22 @@ class _HomePageState extends ConsumerState<HomePage> {
     final value = url.trim();
     if (value.isEmpty || value.toLowerCase() == 'null') return '';
 
-    if (value.startsWith('http://localhost:')) {
-      return value.replaceFirst('http://localhost:', 'http://10.0.2.2:');
+    if (value.startsWith('http://localhost:') ||
+        value.startsWith('https://localhost:') ||
+        value.startsWith('http://127.0.0.1:') ||
+        value.startsWith('https://127.0.0.1:')) {
+      final uri = Uri.tryParse(value);
+      if (uri != null) {
+        final base = Uri.parse(ApiEndpoints.serverUrl);
+        return Uri(
+          scheme: base.scheme,
+          host: base.host,
+          port: base.port,
+          path: uri.path,
+          query: uri.query.isEmpty ? null : uri.query,
+        ).toString();
+      }
+      return '';
     }
     if (value.startsWith('http')) return value;
 

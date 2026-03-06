@@ -38,14 +38,21 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorix/app/theme/app.dart';
 import 'package:tutorix/core/services/hive/hive_service.dart';
 import 'package:tutorix/core/services/storage/user_session_service.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    WebViewPlatform.instance = AndroidWebViewPlatform();
+  }
 
   // Initialize Hive
   final hiveService = HiveService();
@@ -55,10 +62,7 @@ void main() async {
   final sharedPrefs = await SharedPreferences.getInstance();
 
   // Initialize UserSessionService
-  final userSessionService = UserSessionService(prefs: sharedPrefs);
-
-  // CLEAR session for demo video
-  await userSessionService.clearUserSession();
+  UserSessionService(prefs: sharedPrefs);
 
   runApp(
     ProviderScope(
