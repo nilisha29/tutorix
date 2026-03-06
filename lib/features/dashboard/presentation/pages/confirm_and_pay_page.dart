@@ -5,6 +5,7 @@ import 'package:tutorix/features/dashboard/presentation/pages/payment_gateway_pa
 class ConfirmAndPayPage extends StatefulWidget {
   const ConfirmAndPayPage({
     super.key,
+    required this.tutorId,
     required this.tutorName,
     required this.tutorProfileImage,
     required this.dateLabel,
@@ -15,6 +16,7 @@ class ConfirmAndPayPage extends StatefulWidget {
   });
 
   final String tutorName;
+  final String tutorId;
   final String tutorProfileImage;
   final String dateLabel;
   final String timeLabel;
@@ -104,7 +106,7 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
             ),
             const SizedBox(height: 8),
             _paymentTile('Khalti'),
-            _paymentTile('E-Sewa'),
+            _paymentTile('eSewa'),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -112,6 +114,7 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
               child: ElevatedButton(
                 onPressed: () {
                   final booking = BookingRecord(
+                    tutorId: widget.tutorId,
                     tutorName: widget.tutorName,
                     tutorImage: widget.tutorProfileImage,
                     dateLabel: widget.dateLabel,
