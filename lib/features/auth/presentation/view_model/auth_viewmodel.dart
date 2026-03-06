@@ -1274,12 +1274,28 @@ class AuthViewModel extends Notifier<AuthState> {
   }
 
   // =========================
-  // HELPER: Convert localhost to 10.0.2.2 for Android emulator
+  // HELPER: Convert local image URLs to active API server host
   // =========================
   String _fixLocalhostUrl(String? url) {
     if (url == null || url.isEmpty) return url ?? '';
-    // Replace localhost with 10.0.2.2 for Android emulator
-    return url.replaceAll('http://localhost:', 'http://10.0.2.2:');
+    if (url.startsWith('http://localhost:') ||
+        url.startsWith('https://localhost:') ||
+        url.startsWith('http://127.0.0.1:') ||
+        url.startsWith('https://127.0.0.1:')) {
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+        final base = Uri.parse(ApiEndpoints.serverUrl);
+        return Uri(
+          scheme: base.scheme,
+          host: base.host,
+          port: base.port,
+          path: uri.path,
+          query: uri.query.isEmpty ? null : uri.query,
+        ).toString();
+      }
+      return '';
+    }
+    return url;
   }
 
   String _sanitizeToken(String? rawToken) {
@@ -1524,10 +1540,13 @@ class AuthViewModel extends Notifier<AuthState> {
 
       print('[UPDATE PROFILE] FormData ready, sending to server...');
       
-      final response = await _apiClient.uploadFile(
-        ApiEndpoints.users,
-        formData: formData,
-        options: Options(contentType: 'multipart/form-data'),
+      final response = await _apiClient.dio.put(
+        ApiEndpoints.authUpdateProfile,
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+          headers: {'Accept': 'application/json'},
+        ),
       );
 
       print('[UPDATE PROFILE] Response status: ${response.statusCode}');

@@ -19,7 +19,7 @@ class ApiEndpoints {
 
     // Configuration
   static const bool isPhysicalDevice = true;
-  static const String _ipAddress = '192.168.1.9';
+  static const String _ipAddress = '192.168.1.7';
   static const int _port = 5050;
 
   // Base URLs
@@ -50,6 +50,11 @@ class ApiEndpoints {
   static const String users = '/users';
   static const String userLogin = '/auth/login';
   static const String userRegister = '/auth/register';
+  static const String authForgotPassword = '/auth/forgot-password';
+  static const String authResetPassword = '/auth/reset-password';
+  static const String authChangePassword = '/auth/change-password';
+  static const String authUpdateProfile = '/auth/update-profile';
+  static const String authWhoAmI = '/auth/whoami';
   static String userById(String id) => '/students/$id';
   static String userPhoto(String id) => '/students/$id/photo';
     static String userProfilePicture(String filename) =>
@@ -65,5 +70,10 @@ class ApiEndpoints {
   static String commentById(String id) => '/comments/$id';
   static String commentsByItem(String itemId) => '/comments/item/$itemId';
   static String commentLike(String id) => '/comments/$id/like';
+
+  // ============ Payment Endpoints ============
+  static const String paymentsBase = '/bookings/payments';
+  static const String paymentsInitiate = '/bookings/payments/initiate';
+  static const String paymentsVerify = '/bookings/payments/verify';
 }
 
