@@ -151,6 +151,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tutorix/core/api/api_endpoints.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
 import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
 
@@ -188,12 +189,38 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
   }
 
+  String _normalizeProfileUrl(String? value) {
+    if (value == null || value.trim().isEmpty) return '';
+    final url = value.trim();
+
+    if (url.startsWith('http://localhost:') ||
+        url.startsWith('https://localhost:') ||
+        url.startsWith('http://127.0.0.1:') ||
+        url.startsWith('https://127.0.0.1:')) {
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+        final base = Uri.parse(ApiEndpoints.serverUrl);
+        return Uri(
+          scheme: base.scheme,
+          host: base.host,
+          port: base.port,
+          path: uri.path,
+          query: uri.query.isEmpty ? null : uri.query,
+        ).toString();
+      }
+    }
+
+    if (url.startsWith('/')) return '${ApiEndpoints.mediaServerUrl}$url';
+    return url;
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
 
-    final profilePath =
+    final rawProfilePath =
         authState.profilePicture ?? authState.authEntity?.profilePicture;
+    final profilePath = _normalizeProfileUrl(rawProfilePath);
 
     Widget getProfileAvatar() {
       if (profilePath == null || profilePath.isEmpty) {
