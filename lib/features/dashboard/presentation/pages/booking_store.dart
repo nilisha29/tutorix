@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class BookingRecord {
   BookingRecord({
+    required this.tutorId,
     required this.tutorName,
     required this.tutorImage,
     required this.dateLabel,
@@ -11,9 +12,12 @@ class BookingRecord {
     required this.totalPrice,
     required this.paymentMethod,
     this.isCompleted = false,
+    this.bookingStatus,
+    this.paymentStatus,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
+  final String tutorId;
   final String tutorName;
   final String tutorImage;
   final String dateLabel;
@@ -23,6 +27,8 @@ class BookingRecord {
   final double totalPrice;
   final String paymentMethod;
   final bool isCompleted;
+  final String? bookingStatus;
+  final String? paymentStatus;
   final DateTime createdAt;
 }
 
@@ -32,5 +38,9 @@ class BookingStore {
 
   static void addBooking(BookingRecord booking) {
     bookings.value = <BookingRecord>[booking, ...bookings.value];
+  }
+
+  static void setBookings(List<BookingRecord> items) {
+    bookings.value = List<BookingRecord>.from(items);
   }
 }

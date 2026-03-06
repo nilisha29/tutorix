@@ -6,12 +6,14 @@ import 'package:tutorix/features/dashboard/presentation/pages/confirm_and_pay_pa
 class BookTutorPage extends StatefulWidget {
   const BookTutorPage({
     super.key,
+    required this.tutorId,
     required this.tutorName,
     required this.priceLabel,
     required this.tutorProfileImage,
     required this.availabilitySlots,
   });
 
+  final String tutorId;
   final String tutorName;
   final String priceLabel;
   final String tutorProfileImage;
@@ -527,6 +529,7 @@ class _BookTutorPageState extends State<BookTutorPage> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => ConfirmAndPayPage(
+                                tutorId: widget.tutorId,
                                 tutorName: widget.tutorName,
                                 tutorProfileImage: widget.tutorProfileImage,
                                 dateLabel: _formatDateLabel(_selectedDateKey),

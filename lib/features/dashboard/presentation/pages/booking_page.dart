@@ -20,18 +20,153 @@
 //   }
 // }
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import 'package:tutorix/core/api/api_client.dart';
+import 'package:tutorix/core/api/api_endpoints.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/booking_store.dart';
 
-class BookingPage extends StatefulWidget {
+class BookingPage extends ConsumerStatefulWidget {
   const BookingPage({super.key});
 
   @override
-  State<BookingPage> createState() => _BookingPageState();
+  ConsumerState<BookingPage> createState() => _BookingPageState();
 }
 
-class _BookingPageState extends State<BookingPage> {
+class _BookingPageState extends ConsumerState<BookingPage> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBookings();
+  }
+
+  Future<void> _fetchBookings() async {
+    setState(() => _loading = true);
+    final apiClient = ref.read(apiClientProvider);
+
+    final endpointCandidates = <String>[
+      '/bookings/my-student',
+      '/bookings/my',
+      '/bookings',
+    ];
+
+    try {
+      for (final endpoint in endpointCandidates) {
+        try {
+          final response = await apiClient.get(endpoint);
+          final rows = _extractList(response.data);
+          final parsed = rows
+              .map(_toBookingRecord)
+              .whereType<BookingRecord>()
+              .toList();
+          BookingStore.setBookings(parsed);
+          if (!mounted) return;
+          setState(() => _loading = false);
+          return;
+        } on DioException catch (e) {
+          final code = e.response?.statusCode ?? 0;
+          if (code == 404 || code == 400) {
+            continue;
+          }
+          rethrow;
+        }
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load bookings from backend')),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  List<dynamic> _extractList(dynamic raw) {
+    if (raw is Map && raw['data'] is List) return raw['data'] as List<dynamic>;
+    if (raw is List) return raw;
+    return const [];
+  }
+
+  BookingRecord? _toBookingRecord(dynamic item) {
+    if (item is! Map) return null;
+    final map = Map<String, dynamic>.from(item as Map);
+    final tutorRaw = map['tutorId'];
+    final tutor = tutorRaw is Map ? Map<String, dynamic>.from(tutorRaw as Map) : <String, dynamic>{};
+
+    final tutorId = (tutor['_id'] ?? tutor['id'] ?? map['tutorId'] ?? '').toString();
+    final tutorName =
+        (tutor['fullName'] ?? tutor['name'] ?? tutor['username'] ?? 'Tutor').toString();
+    final tutorImage = _normalizeImageUrl((tutor['profileImage'] ?? tutor['avatar'] ?? '').toString());
+
+    final amountRaw = map['amount'] ?? 0;
+    final totalPrice = amountRaw is num
+        ? amountRaw.toDouble()
+        : double.tryParse(amountRaw.toString()) ?? 0;
+
+    final durationRaw = map['duration'] ?? 60;
+    final durationMinutes = int.tryParse(durationRaw.toString()) ?? 60;
+
+    var bookingStatus = (map['bookingStatus'] ?? '').toString();
+    final paymentStatus = (map['paymentStatus'] ?? '').toString();
+
+    final normalizedBookingStatus = bookingStatus.toLowerCase();
+    final normalizedPaymentStatus = paymentStatus.toLowerCase();
+
+    if (normalizedBookingStatus == 'cancelled' || normalizedBookingStatus == 'canceled') {
+      bookingStatus = 'pending';
+    } else if (normalizedPaymentStatus == 'paid' && normalizedBookingStatus != 'completed') {
+      bookingStatus = 'confirmed';
+    }
+
+    final isCompleted = bookingStatus.toLowerCase() == 'completed';
+
+    final createdAt =
+        DateTime.tryParse((map['createdAt'] ?? '').toString()) ?? DateTime.now();
+
+    return BookingRecord(
+      tutorId: tutorId,
+      tutorName: tutorName,
+      tutorImage: tutorImage,
+      dateLabel: (map['date'] ?? '').toString(),
+      timeLabel: (map['time'] ?? '').toString(),
+      sessionRate: durationMinutes > 0 ? (totalPrice * 60 / durationMinutes) : totalPrice,
+      durationMinutes: durationMinutes,
+      totalPrice: totalPrice,
+      paymentMethod: (map['paymentMethod'] ?? 'esewa').toString(),
+      isCompleted: isCompleted,
+      bookingStatus: bookingStatus,
+      paymentStatus: paymentStatus,
+      createdAt: createdAt,
+    );
+  }
+
+  String _normalizeImageUrl(String value) {
+    final url = value.trim();
+    if (url.isEmpty) return '';
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      if (url.contains('localhost')) {
+        final uri = Uri.tryParse(url);
+        if (uri != null) {
+          final base = Uri.parse(ApiEndpoints.serverUrl);
+          return Uri(
+            scheme: base.scheme,
+            host: base.host,
+            port: base.port,
+            path: uri.path,
+          ).toString();
+        }
+      }
+      return url;
+    }
+
+    if (url.startsWith('/')) return '${ApiEndpoints.mediaServerUrl}$url';
+    return '${ApiEndpoints.mediaServerUrl}/$url';
+  }
 
   @override
   void dispose() {
@@ -80,7 +215,9 @@ class _BookingPageState extends State<BookingPage> {
               ),
             ),
             Expanded(
-              child: ValueListenableBuilder<List<BookingRecord>>(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ValueListenableBuilder<List<BookingRecord>>(
                 valueListenable: BookingStore.bookings,
                 builder: (context, bookings, _) {
                   final filtered = bookings.where((booking) {
@@ -137,6 +274,11 @@ class _BookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final statusText = booking.bookingStatus?.trim().isNotEmpty == true
+      ? booking.bookingStatus!
+      : 'confirmed';
+    final isSuccess = statusText.toLowerCase() == 'confirmed' ||
+      statusText.toLowerCase() == 'completed';
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -178,12 +320,15 @@ class _BookingCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade100,
+                      color: isSuccess ? Colors.green.shade100 : Colors.orange.shade100,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'Confirmed',
-                      style: TextStyle(color: Colors.green, fontSize: 12),
+                    child: Text(
+                      statusText[0].toUpperCase() + statusText.substring(1),
+                      style: TextStyle(
+                        color: isSuccess ? Colors.green : Colors.orange.shade800,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
