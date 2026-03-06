@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
+import 'package:tutorix/core/api/api_endpoints.dart';
 
 class ChangePasswordPage extends ConsumerStatefulWidget {
   const ChangePasswordPage({super.key});
@@ -41,62 +42,39 @@ class _ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     final apiClient = ref.read(apiClientProvider);
 
     final endpointCandidates = <String>[
-      '/auth/change-password',
+      ApiEndpoints.authChangePassword,
       '/auth/changePassword',
-      '/users/change-password',
-      '/users/changePassword',
-      '/change-password',
     ];
 
-    final payloadCandidates = <Map<String, dynamic>>[
-      {
-        'currentPassword': current,
-        'newPassword': next,
-        'confirmPassword': confirm,
-      },
-      {
-        'oldPassword': current,
-        'newPassword': next,
-        'confirmPassword': confirm,
-      },
-      {
-        'password': current,
-        'newPassword': next,
-        'confirmPassword': confirm,
-      },
-      {
-        'currentPassword': current,
-        'password': next,
-        'confirmPassword': confirm,
-      },
-    ];
+    final payload = <String, dynamic>{
+      'currentPassword': current,
+      'newPassword': next,
+    };
 
     DioException? lastError;
 
     try {
       for (final path in endpointCandidates) {
-        for (final data in payloadCandidates) {
-          try {
-            await apiClient.post(path, data: data);
+        try {
+          await apiClient.put(path, data: payload);
 
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Password changed successfully')),
-            );
-            Navigator.pop(context);
-            return;
-          } on DioException catch (e) {
-            lastError = e;
-            if (e.response?.statusCode == 404) {
-              continue;
-            }
-
-            final status = e.response?.statusCode ?? 0;
-            if (status == 400 || status == 422) {
-              continue;
-            }
-            rethrow;
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Password changed successfully')),
+          );
+          Navigator.pop(context);
+          return;
+        } on DioException catch (e) {
+          lastError = e;
+          if (e.response?.statusCode == 404) {
+            continue;
           }
+
+          final status = e.response?.statusCode ?? 0;
+          if (status == 400 || status == 422) {
+            continue;
+          }
+          rethrow;
         }
       }
 

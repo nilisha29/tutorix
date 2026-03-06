@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
+import 'package:tutorix/core/api/api_endpoints.dart';
 import 'package:tutorix/core/utils/snackbar_utils.dart';
 
 class ResetPasswordPage extends ConsumerStatefulWidget {
@@ -26,6 +27,59 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   bool _hideNewPassword = true;
   bool _hideConfirmPassword = true;
   bool _linkSent = false;
+  static const bool _showDebugSnackbars = true;
+
+  void _showDebugSnack(String message) {
+    if (!_showDebugSnackbars || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.blueGrey,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  String _extractTokenFromInput(String raw) {
+    final input = raw.trim();
+    if (input.isEmpty) return '';
+
+    final uri = Uri.tryParse(input);
+    if (uri != null) {
+      final queryToken = uri.queryParameters['token'];
+      if (queryToken != null && queryToken.trim().isNotEmpty) {
+        return queryToken.trim();
+      }
+
+      final segments = uri.pathSegments;
+      if (segments.isNotEmpty) {
+        final last = segments.last.trim();
+        if (last.isNotEmpty && last.toLowerCase() != 'reset-password') {
+          return last;
+        }
+      }
+    }
+
+    final hexToken = RegExp(r'[a-fA-F0-9]{64}').firstMatch(input)?.group(0);
+    if (hexToken != null && hexToken.isNotEmpty) return hexToken;
+
+    return input.replaceAll(RegExp(r'^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$'), '');
+  }
+
+  String _friendlyDioMessage(DioException? error, {String fallback = 'Request failed'}) {
+    if (error == null) return fallback;
+    final data = error.response?.data;
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data as Map);
+      final msg = map['message']?.toString();
+      if (msg != null && msg.trim().isNotEmpty) return msg.trim();
+      final errors = map['errors'];
+      if (errors != null) return errors.toString();
+    }
+    final code = error.response?.statusCode;
+    if (code == 404) return 'Reset password endpoint not found on backend.';
+    return error.message ?? fallback;
+  }
 
   @override
   void initState() {
@@ -50,44 +104,38 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
 
     final apiClient = ref.read(apiClientProvider);
 
-    final endpointCandidates = <String>[
-      '/auth/forgot-password',
-      '/auth/forgotPassword',
-      '/auth/reset-password-link',
-      '/users/forgot-password',
-      '/forgot-password',
-    ];
+    final endpointCandidates = <String>[ApiEndpoints.authForgotPassword];
 
-    final payloadCandidates = <Map<String, dynamic>>[
-      {'email': email},
-      {'userEmail': email},
-      {'username': email},
-    ];
+    final payload = <String, dynamic>{'email': email.toLowerCase()};
 
     DioException? lastError;
 
     try {
       for (final path in endpointCandidates) {
-        for (final data in payloadCandidates) {
-          try {
-            await apiClient.post(path, data: data);
+        try {
+          await apiClient.post(
+            path,
+            data: payload,
+            options: Options(
+              headers: {
+                'x-client-origin': ApiEndpoints.serverUrl,
+              },
+            ),
+          );
 
-            if (!mounted) return;
-            SnackbarUtils.showSuccess(
-              context,
-              'If this email is registered, a reset link has been sent.',
-            );
-            setState(() => _linkSent = true);
-            return;
-          } on DioException catch (e) {
-            lastError = e;
-            if (e.response?.statusCode == 404 ||
-                e.response?.statusCode == 400 ||
-                e.response?.statusCode == 422) {
-              continue;
-            }
-            rethrow;
+          if (!mounted) return;
+          SnackbarUtils.showSuccess(
+            context,
+            'Reset link sent. If link does not open on phone, copy token or full link and paste below.',
+          );
+          setState(() => _linkSent = true);
+          return;
+        } on DioException catch (e) {
+          lastError = e;
+          if (e.response?.statusCode == 404) {
+            continue;
           }
+          rethrow;
         }
       }
 
@@ -115,7 +163,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
-    final token = _tokenController.text.trim();
+    final token = _extractTokenFromInput(_tokenController.text);
     final newPassword = _newPasswordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
@@ -123,55 +171,36 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
 
     final apiClient = ref.read(apiClientProvider);
 
-    final endpointCandidates = <String>[
-      '/auth/reset-password',
-      '/auth/resetPassword',
-      '/users/reset-password',
-      '/users/resetPassword',
-      '/reset-password',
-    ];
+    final endpointCandidates = <String>[ApiEndpoints.authResetPassword];
 
-    final payloadCandidates = <Map<String, dynamic>>[
-      {
-        'email': email,
-        'token': token,
-        'newPassword': newPassword,
-        'confirmPassword': confirmPassword,
-      },
-      {
-        'email': email,
-        'resetToken': token,
-        'newPassword': newPassword,
-        'confirmPassword': confirmPassword,
-      },
-      {
-        'email': email,
-        'token': token,
-        'password': newPassword,
-        'confirmPassword': confirmPassword,
-      },
-    ];
+    final payload = <String, dynamic>{
+      'token': token,
+      'password': newPassword,
+    };
 
     DioException? lastError;
 
     try {
       for (final path in endpointCandidates) {
-        for (final data in payloadCandidates) {
-          try {
-            await apiClient.post(path, data: data);
+        try {
+          await apiClient.post(path, data: payload);
 
-            if (!mounted) return;
-            SnackbarUtils.showSuccess(context, 'Password reset successful. Please login.');
-            Navigator.pop(context);
-            return;
-          } on DioException catch (e) {
-            lastError = e;
-            final status = e.response?.statusCode ?? 0;
-            if (status == 404 || status == 400 || status == 422) {
-              continue;
-            }
-            rethrow;
+          if (!mounted) return;
+          SnackbarUtils.showSuccess(context, 'Password reset successful. Please login.');
+          Navigator.pop(context);
+          return;
+        } on DioException catch (e) {
+          lastError = e;
+          final status = e.response?.statusCode ?? 0;
+          if (status == 404) {
+            continue;
           }
+          if (!mounted) return;
+          SnackbarUtils.showError(
+            context,
+            _friendlyDioMessage(e, fallback: 'Failed to reset password'),
+          );
+          return;
         }
       }
 
@@ -184,7 +213,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       SnackbarUtils.showError(
         context,
         backendMessage ??
-            lastError?.message ??
+          _friendlyDioMessage(lastError, fallback: 'Failed to reset password') ??
             'Reset password endpoint not available on backend',
       );
     } catch (_) {
@@ -251,7 +280,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                 TextFormField(
                   controller: _tokenController,
                   decoration: InputDecoration(
-                    labelText: 'Reset Token',
+                    labelText: 'Reset Token or Link',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   validator: (value) {
