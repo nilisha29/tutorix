@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
 import 'package:tutorix/core/services/storage/user_session_service.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/message_threads_store.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/tutor_message_page.dart';
+import 'package:tutorix/features/messaging/presentation/state/message_threads_store.dart';
+import 'package:tutorix/features/messaging/presentation/pages/tutor_message_page.dart';
 
 class MessagesInboxPage extends ConsumerStatefulWidget {
   const MessagesInboxPage({super.key});

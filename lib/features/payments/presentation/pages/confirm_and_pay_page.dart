@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/booking_store.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/payment_gateway_page.dart';
+import 'package:tutorix/features/bookings/presentation/state/booking_store.dart';
+import 'package:tutorix/features/payments/presentation/pages/payment_gateway_page.dart';
 
 class ConfirmAndPayPage extends StatefulWidget {
   const ConfirmAndPayPage({
@@ -108,9 +108,8 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
             _paymentTile('Khalti'),
             _paymentTile('eSewa'),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
+            Align(
+              alignment: Alignment.center,
               child: ElevatedButton(
                 onPressed: () {
                   final booking = BookingRecord(
@@ -138,11 +137,20 @@ class _ConfirmAndPayPageState extends State<ConfirmAndPayPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3F7F4F),
                   foregroundColor: Colors.white,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
                 ),
-                child: Text(
-                  'Pay Rs ${widget.totalPrice.toStringAsFixed(0)} with $_selectedPayment',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Pay Rs ${widget.totalPrice.toStringAsFixed(0)} with $_selectedPayment',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
                 ),
               ),
             ),

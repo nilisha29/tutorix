@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/booking_page.dart';
+import 'package:tutorix/features/dashboard/presentation/pages/bottom_screen_layout.dart';
 
 class PaymentSuccessPage extends StatelessWidget {
   const PaymentSuccessPage({super.key});
@@ -55,23 +55,33 @@ class PaymentSuccessPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
+                Align(
+                  alignment: Alignment.center,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (_) => const BookingPage()),
+                        MaterialPageRoute(
+                          builder: (_) => const BottomScreenLayout(initialIndex: 3),
+                        ),
                         (route) => route.isFirst,
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3F7F4F),
                       foregroundColor: Colors.white,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      minimumSize: const Size.fromHeight(48),
                     ),
-                    child: const Text('View Booking'),
+                    child: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'View My Bookings',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                      ),
+                    ),
                   ),
                 ),
               ],

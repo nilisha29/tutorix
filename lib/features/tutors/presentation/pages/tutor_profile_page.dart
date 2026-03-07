@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/book_tutor_page.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/saved_tutor_store.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/tutor_message_page.dart';
+import 'package:tutorix/features/tutors/presentation/pages/book_tutor_page.dart';
+import 'package:tutorix/features/saved_tutors/presentation/state/saved_tutor_store.dart';
+import 'package:tutorix/features/messaging/presentation/pages/tutor_message_page.dart';
 
 class TutorProfilePage extends ConsumerStatefulWidget {
   const TutorProfilePage({
@@ -1146,8 +1146,8 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                   ),
 
                   const SizedBox(height: 14),
-                  SizedBox(
-                    height: 44,
+                  Align(
+                    alignment: Alignment.center,
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.push(
@@ -1165,6 +1165,8 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                       },
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(22),
                         ),
@@ -1179,19 +1181,24 @@ class _TutorProfilePageState extends ConsumerState<TutorProfilePage> {
                             ],
                           ),
                         ),
-                        child: const Center(
-                          child: Text(
-                            'Book Tutor',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Book Tutor',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
                   if (_error != null) ...[
                     const SizedBox(height: 10),
                     Text(

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/tutor_profile_page.dart';
+import 'package:tutorix/features/tutors/presentation/pages/tutor_profile_page.dart';
 
 class CategoryTutorsPage extends ConsumerStatefulWidget {
   const CategoryTutorsPage({

@@ -6,8 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/booking_store.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/payment_success_page.dart';
+import 'package:tutorix/core/services/storage/user_session_service.dart';
+import 'package:tutorix/features/bookings/presentation/state/booking_store.dart';
+import 'package:tutorix/features/payments/presentation/pages/payment_success_page.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
@@ -30,12 +31,31 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
   static const String _defaultEsewaUatFormUrl = 'https://rc-epay.esewa.com.np/epay/main';
 
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController =
-      TextEditingController(text: 'Saanvi Thapa');
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
   bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final session = ref.read(userSessionServiceProvider);
+    final fullName = session.getUserFullName()?.trim() ?? '';
+    final username = session.getUserName()?.trim() ?? '';
+    final phone = session.getUserPhoneNumber()?.trim() ?? '';
+    final address = session.getUserAddress()?.trim() ?? '';
+
+    _nameController.text = fullName.isNotEmpty
+        ? fullName
+        : (username.isNotEmpty ? username : '');
+    if (phone.isNotEmpty) {
+      _mobileController.text = phone;
+    }
+    if (address.isNotEmpty) {
+      _addressController.text = address;
+    }
+  }
 
   String _normalizeTutorId(String raw) {
     final text = raw.trim();
@@ -44,6 +64,7 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
   }
 
   List<Map<String, dynamic>> _buildInitiatePayloadCandidates() {
+    final provider = _resolveProvider(widget.method);
     final tutorId = _normalizeTutorId(widget.booking.tutorId);
     final amountNum = widget.booking.totalPrice;
     final base = <String, dynamic>{
@@ -51,7 +72,7 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
       'date': widget.booking.dateLabel,
       'time': widget.booking.timeLabel,
       'duration': widget.booking.durationMinutes.toString(),
-      'paymentMethod': 'esewa',
+      'paymentMethod': provider,
       'amount': amountNum,
     };
 
@@ -92,7 +113,8 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
   }
 
   String _extractBackendErrorMessage(DioException? error) {
-    if (error == null) return 'Failed to start eSewa checkout.';
+    final providerLabel = _providerLabel(_resolveProvider(widget.method));
+    if (error == null) return 'Failed to start $providerLabel checkout.';
     final data = error.response?.data;
     if (data is Map) {
       final map = Map<String, dynamic>.from(data as Map);
@@ -110,7 +132,7 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
     if (code == 400 || code == 422) {
       return 'Invalid payment request. Please check booking details and try again.';
     }
-    return 'Failed to start eSewa checkout (${code ?? 'unknown error'}).';
+    return 'Failed to start $providerLabel checkout (${code ?? 'unknown error'}).';
   }
 
   String _extractResponseMessage(dynamic data) {
@@ -125,7 +147,8 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
       }
       if (map['errors'] != null) return map['errors'].toString();
     }
-    return 'Failed to start eSewa checkout.';
+    final providerLabel = _providerLabel(_resolveProvider(widget.method));
+    return 'Failed to start $providerLabel checkout.';
   }
 
   Map<String, String> _extractFormFields(dynamic raw) {
@@ -252,6 +275,8 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
   }
 
   _EsewaCheckoutPayload? _buildFallbackCheckoutFromInitiate(dynamic data) {
+    final provider = _resolveProvider(widget.method);
+    if (provider != 'esewa') return null;
     if (!_looksLikeInitiateSuccess(data)) return null;
 
     final merged = <String, dynamic>{};
@@ -412,20 +437,32 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
   String? _extractPaymentRefFromMap(Map<String, dynamic> map) {
     return _extractStringByKeys(
       map,
-      const ['paymentRef', 'payment_ref', 'transaction_uuid', 'transactionUuid', 'pid'],
+      const ['paymentRef', 'payment_ref', 'transaction_uuid', 'transactionUuid', 'pid', 'gatewayRef', 'pidx'],
     );
   }
 
   String? _extractTransactionUuidFromMap(Map<String, dynamic> map) {
     return _extractStringByKeys(
       map,
-      const ['transaction_uuid', 'transactionUuid', 'pid', 'paymentRef', 'payment_ref'],
+      const ['transaction_uuid', 'transactionUuid', 'pid', 'paymentRef', 'payment_ref', 'gatewayRef', 'pidx'],
     );
   }
 
-  Future<bool> _verifyEsewaPayment(
+  String _resolveProvider(String method) {
+    final normalized = method.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (normalized.contains('khalti')) return 'khalti';
+    return 'esewa';
+  }
+
+  String _providerLabel(String provider) {
+    if (provider == 'khalti') return 'Khalti';
+    return 'eSewa';
+  }
+
+  Future<bool> _verifyGatewayPayment(
     ApiClient apiClient,
     _EsewaCheckoutPayload payload, {
+    required String provider,
     required String status,
   }) async {
     final bookingId = payload.bookingId?.trim();
@@ -437,28 +474,28 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
     if (bookingId != null && bookingId.isNotEmpty) {
       candidates.add({
         'bookingId': bookingId,
-        'provider': 'esewa',
+        'provider': provider,
         'status': status,
         if (paymentRef != null && paymentRef.isNotEmpty) 'paymentRef': paymentRef,
         if (transactionUuid != null && transactionUuid.isNotEmpty)
-          'transactionUuid': transactionUuid,
+          provider == 'khalti' ? 'pidx' : 'transactionUuid': transactionUuid,
       });
     }
 
     if (paymentRef != null && paymentRef.isNotEmpty) {
       candidates.add({
         'paymentRef': paymentRef,
-        'provider': 'esewa',
+        'provider': provider,
         'status': status,
         if (transactionUuid != null && transactionUuid.isNotEmpty)
-          'transactionUuid': transactionUuid,
+          provider == 'khalti' ? 'pidx' : 'transactionUuid': transactionUuid,
       });
     }
 
     if (transactionUuid != null && transactionUuid.isNotEmpty) {
       candidates.add({
-        'transactionUuid': transactionUuid,
-        'provider': 'esewa',
+        provider == 'khalti' ? 'pidx' : 'transactionUuid': transactionUuid,
+        'provider': provider,
         'status': status,
       });
     }
@@ -512,24 +549,48 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
   }
 
   bool _isEsewaMethod(String method) {
-    final normalized =
-        method.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    return normalized.contains('esewa');
+    return _resolveProvider(method) == 'esewa';
+  }
+
+  Future<bool> _openKhaltiPaymentFlow() async {
+    final result = await Navigator.push<_KhaltiMockPaymentResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _KhaltiMockPaymentPage(
+          booking: widget.booking,
+          name: _nameController.text.trim(),
+          mobile: _mobileController.text.trim(),
+        ),
+      ),
+    );
+
+    if (!mounted || result == null || result == _KhaltiMockPaymentResult.cancelled) {
+      return false;
+    }
+
+    if (result == _KhaltiMockPaymentResult.failed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Khalti payment failed. Please try again.'),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+      return false;
+    }
+
+    BookingStore.addBooking(widget.booking);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
+    );
+    return true;
   }
 
   Future<void> _handlePay() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final isEsewa = _isEsewaMethod(widget.method);
-    if (!isEsewa) {
-      BookingStore.addBooking(widget.booking);
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
-      );
-      return;
-    }
+    final provider = _resolveProvider(widget.method);
+    final providerLabel = _providerLabel(provider);
 
     final normalizedTutorId = _normalizeTutorId(widget.booking.tutorId);
     if (normalizedTutorId.isEmpty) {
@@ -539,6 +600,16 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
           backgroundColor: Colors.red.shade600,
         ),
       );
+      return;
+    }
+
+    if (provider == 'khalti') {
+      setState(() => _isProcessing = true);
+      try {
+        await _openKhaltiPaymentFlow();
+      } finally {
+        if (mounted) setState(() => _isProcessing = false);
+      }
       return;
     }
 
@@ -570,15 +641,18 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
             if (!mounted) return;
 
             if (result == _EsewaCheckoutResult.success) {
-              final verified = await _verifyEsewaPayment(
+              final verified = await _verifyGatewayPayment(
                 apiClient,
                 checkoutPayload,
+                provider: provider,
                 status: 'success',
               );
               if (!verified && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Payment received but verification is still pending.'),
+                  SnackBar(
+                    content: Text(
+                      '$providerLabel payment received but verification is still pending.',
+                    ),
                   ),
                 );
               }
@@ -591,14 +665,15 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
             }
 
             if (result == _EsewaCheckoutResult.failed) {
-              await _verifyEsewaPayment(
+              await _verifyGatewayPayment(
                 apiClient,
                 checkoutPayload,
+                provider: provider,
                 status: 'failed',
               );
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('eSewa payment failed or cancelled.'),
+                  content: Text('$providerLabel payment failed or cancelled.'),
                   backgroundColor: Colors.red.shade600,
                 ),
               );
@@ -606,13 +681,14 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
             }
 
             if (result == _EsewaCheckoutResult.cancelled) {
-              await _verifyEsewaPayment(
+              await _verifyGatewayPayment(
                 apiClient,
                 checkoutPayload,
+                provider: provider,
                 status: 'failed',
               );
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('eSewa payment cancelled.')),
+                SnackBar(content: Text('$providerLabel payment cancelled.')),
               );
               return;
             }
@@ -630,13 +706,13 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
       }
 
       if (!mounted) return;
+      final fallbackMessage = lastError != null
+          ? _extractBackendErrorMessage(lastError)
+          : _extractResponseMessage(lastResponseData);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            lastError != null
-                ? _extractBackendErrorMessage(lastError)
-                : _extractResponseMessage(lastResponseData),
-          ),
+          content: Text(fallbackMessage),
           backgroundColor: Colors.red.shade600,
         ),
       );
@@ -644,7 +720,8 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
       if (!mounted) return;
       final message = e is DioException
           ? _extractBackendErrorMessage(e)
-          : 'eSewa checkout error: $e';
+          : '$providerLabel checkout error: $e';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -660,12 +737,14 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
     final redirectUri = Uri.tryParse(payload.redirectUrl);
     if (redirectUri == null || !mounted) return _EsewaCheckoutResult.error;
 
+    final providerLabel = _providerLabel(_resolveProvider(widget.method));
+
     try {
       final result = await Navigator.push<_EsewaCheckoutResult>(
         context,
         MaterialPageRoute(
           builder: (_) => _EsewaWebViewPage(
-            title: 'eSewa Checkout',
+            title: '$providerLabel Checkout',
             initialUrl: redirectUri,
             postFields: payload.redirectMethod == 'POST'
                 ? payload.redirectFormFields
@@ -696,6 +775,8 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
       source = Map<String, dynamic>.from(base['checkout'] as Map);
     } else if (base['esewa'] is Map) {
       source = Map<String, dynamic>.from(base['esewa'] as Map);
+    } else if (base['khalti'] is Map) {
+      source = Map<String, dynamic>.from(base['khalti'] as Map);
     }
 
     final mergedSource = <String, dynamic>{
@@ -784,7 +865,7 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
       ),
       body: Form(
         key: _formKey,
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -799,13 +880,23 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF111111) : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isDark ? Colors.white24 : const Color(0xFFDDE3EA),
                   ),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'Booking Summary',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF1D2B4A),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     _summaryRow('Tutor', widget.booking.tutorName, isDark),
                     _summaryRow(
                       'Date & Time',
@@ -827,32 +918,66 @@ class _PaymentGatewayPageState extends ConsumerState<PaymentGatewayPage> {
                 ),
               ),
               const SizedBox(height: 10),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(hintText: 'Full Name'),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty)
-                        ? 'Enter your name'
-                        : null,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _mobileController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(hintText: 'Mobile Number'),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty)
-                        ? 'Enter mobile number'
-                        : null,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _addressController,
-                decoration: const InputDecoration(hintText: 'Address'),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty)
-                        ? 'Enter address'
-                        : null,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF111111) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? Colors.white24 : const Color(0xFFDDE3EA),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Payer Details',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF1D2B4A),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        hintText: 'Full Name',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                              ? 'Enter your name'
+                              : null,
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _mobileController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        hintText: 'Mobile Number',
+                        prefixIcon: Icon(Icons.phone_outlined),
+                      ),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                              ? 'Enter mobile number'
+                              : null,
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _addressController,
+                      decoration: const InputDecoration(
+                        hintText: 'Address',
+                        prefixIcon: Icon(Icons.location_on_outlined),
+                      ),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                              ? 'Enter address'
+                              : null,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -957,6 +1082,242 @@ enum _EsewaCheckoutResult {
   failed,
   cancelled,
   error,
+}
+
+enum _KhaltiMockPaymentResult {
+  success,
+  failed,
+  cancelled,
+}
+
+class _KhaltiMockPaymentPage extends StatefulWidget {
+  const _KhaltiMockPaymentPage({
+    required this.booking,
+    required this.name,
+    required this.mobile,
+  });
+
+  final BookingRecord booking;
+  final String name;
+  final String mobile;
+
+  @override
+  State<_KhaltiMockPaymentPage> createState() => _KhaltiMockPaymentPageState();
+}
+
+class _KhaltiMockPaymentPageState extends State<_KhaltiMockPaymentPage> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _mobileController;
+  final TextEditingController _pinController = TextEditingController();
+  bool _showPin = false;
+  bool _processing = false;
+  int _stage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _mobileController = TextEditingController(text: widget.mobile);
+  }
+
+  @override
+  void dispose() {
+    _mobileController.dispose();
+    _pinController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _continueToPay() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _stage = 1);
+  }
+
+  Future<void> _payNow() async {
+    setState(() => _processing = true);
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+    setState(() => _processing = false);
+    Navigator.pop(context, _KhaltiMockPaymentResult.success);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final booking = widget.booking;
+
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      backgroundColor: isDark ? Colors.black : const Color(0xFFF5F6F8),
+      appBar: AppBar(
+        title: const Text('Khalti Wallet'),
+      ),
+      body: Form(
+        key: _formKey,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF111111) : const Color(0xFFF2EAFF),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark ? Colors.white24 : const Color(0xFFC7B3ED),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5C2D91),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.account_balance_wallet,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _stage == 0
+                              ? 'Login to your Khalti wallet to continue payment.'
+                              : 'Confirm payment using your Khalti wallet.',
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : const Color(0xFF382063),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _khaltiRow('Tutor', booking.tutorName, isDark),
+                _khaltiRow('Amount', 'NPR ${booking.totalPrice.toStringAsFixed(2)}', isDark),
+                _khaltiRow('Payer', widget.name.isEmpty ? 'Khalti User' : widget.name, isDark),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _mobileController,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  decoration: const InputDecoration(
+                    hintText: 'Khalti Mobile Number',
+                    counterText: '',
+                  ),
+                  validator: (value) {
+                    final text = (value ?? '').trim();
+                    if (text.length != 10) return 'Enter valid 10-digit mobile number';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _pinController,
+                  obscureText: !_showPin,
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Khalti MPIN',
+                    counterText: '',
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _showPin = !_showPin),
+                      icon: Icon(_showPin ? Icons.visibility_off : Icons.visibility),
+                    ),
+                  ),
+                  validator: (value) {
+                    final text = (value ?? '').trim();
+                    if (text.length != 4) return 'MPIN must be 4 digits';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _stage == 0
+                      ? 'Step 1 of 2: Wallet Login'
+                      : 'Step 2 of 2: Payment Confirmation',
+                  style: TextStyle(
+                    color: isDark ? Colors.white60 : Colors.black54,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _processing
+                      ? null
+                      : () => _stage == 0 ? _continueToPay() : _payNow(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF5C2D91),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: _processing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(_stage == 0 ? 'Continue' : 'Pay NPR ${booking.totalPrice.toStringAsFixed(2)}'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: _processing
+                      ? null
+                      : () => Navigator.pop(context, _KhaltiMockPaymentResult.cancelled),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _khaltiRow(String key, String value, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              key,
+              style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF1D2B4A),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _EsewaWebViewPage extends StatefulWidget {

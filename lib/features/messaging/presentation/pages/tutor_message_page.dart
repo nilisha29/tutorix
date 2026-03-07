@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/services/storage/user_session_service.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/message_threads_store.dart';
+import 'package:tutorix/features/messaging/presentation/state/message_threads_store.dart';
 
 class TutorMessagePage extends ConsumerStatefulWidget {
   const TutorMessagePage({

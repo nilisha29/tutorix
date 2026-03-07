@@ -1,7 +1,7 @@
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/confirm_and_pay_page.dart';
+import 'package:tutorix/features/payments/presentation/pages/confirm_and_pay_page.dart';
 
 class BookTutorPage extends StatefulWidget {
   const BookTutorPage({
@@ -25,6 +25,7 @@ class BookTutorPage extends StatefulWidget {
 
 class _BookTutorPageState extends State<BookTutorPage> {
   late LinkedHashMap<String, List<String>> _availableDateTimes;
+  final LinkedHashMap<String, String> _backendDayByDate = LinkedHashMap<String, String>();
   String? _selectedDateKey;
   String? _selectedTime;
   int _selectedDuration = 60;
@@ -54,6 +55,7 @@ class _BookTutorPageState extends State<BookTutorPage> {
   }
 
   LinkedHashMap<String, List<String>> _buildAvailabilityMap(List<String> slots) {
+    _backendDayByDate.clear();
     final temp = LinkedHashMap<String, LinkedHashSet<String>>();
     final dayToDate = <String, String>{};
     final fallbackTimes = <String>{};
@@ -86,17 +88,24 @@ class _BookTutorPageState extends State<BookTutorPage> {
         if (_isDayLabel(left)) {
           if (rightDate != null) {
             dayToDate[left.toLowerCase()] = rightDate;
+            _backendDayByDate[rightDate] = _toShortDayLabel(left);
             temp.putIfAbsent(rightDate, () => LinkedHashSet<String>());
           }
 
           if (rightTimes.isNotEmpty) {
             final resolvedDate = dayToDate[left.toLowerCase()] ?? left;
+            if (_isDayLabel(left)) {
+              _backendDayByDate[resolvedDate] = _toShortDayLabel(left);
+            }
             addTimes(resolvedDate, rightTimes);
             continue;
           }
         }
 
         if (_looksLikeDateOrDay(left) && rightTimes.isNotEmpty) {
+          if (_isDayLabel(left)) {
+            _backendDayByDate[left] = _toShortDayLabel(left);
+          }
           addTimes(left, rightTimes);
           continue;
         }
@@ -106,6 +115,10 @@ class _BookTutorPageState extends State<BookTutorPage> {
       final timesFromWhole = _extractTimesFromText(normalized);
 
       if (dateFromWhole != null) {
+        final dayFromText = _extractDayLabelFromText(normalized);
+        if (dayFromText != null) {
+          _backendDayByDate[dateFromWhole] = dayFromText;
+        }
         temp.putIfAbsent(dateFromWhole, () => LinkedHashSet<String>());
         if (timesFromWhole.isNotEmpty) {
           addTimes(dateFromWhole, timesFromWhole);
@@ -204,10 +217,56 @@ class _BookTutorPageState extends State<BookTutorPage> {
     return _availableDateTimes[_selectedDateKey] ?? const [];
   }
 
+  String _toShortDayLabel(String raw) {
+    final lower = raw.trim().toLowerCase();
+    if (lower.startsWith('mon')) return 'Mon';
+    if (lower.startsWith('tue')) return 'Tue';
+    if (lower.startsWith('wed')) return 'Wed';
+    if (lower.startsWith('thu')) return 'Thu';
+    if (lower.startsWith('fri')) return 'Fri';
+    if (lower.startsWith('sat')) return 'Sat';
+    if (lower.startsWith('sun')) return 'Sun';
+    return raw.trim();
+  }
+
+  String? _extractDayLabelFromText(String raw) {
+    final text = raw.toLowerCase();
+    final match = RegExp(
+      r'\b(mon|monday|tue|tues|tuesday|wed|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday)\b',
+    ).firstMatch(text);
+    if (match == null) return null;
+    return _toShortDayLabel(match.group(0) ?? '');
+  }
+
+  String _dayLabelForDateKey(String dateKey) {
+    final fromBackend = _backendDayByDate[dateKey];
+    if (fromBackend != null && fromBackend.trim().isNotEmpty) {
+      return fromBackend.trim();
+    }
+
+    if (_isDayLabel(dateKey)) {
+      return _toShortDayLabel(dateKey);
+    }
+
+    final parsed = DateTime.tryParse(dateKey.trim());
+    if (parsed != null) {
+      const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return names[parsed.weekday - 1];
+    }
+
+    final fromText = _extractDayLabelFromText(dateKey);
+    if (fromText != null) return fromText;
+    return 'Day';
+  }
+
   String _formatDateLabel(String? label) {
     if (label == null || label.trim().isEmpty) return 'Not selected';
+    final day = _dayLabelForDateKey(label);
     final parsed = DateTime.tryParse(label.trim());
-    if (parsed == null) return label;
+    if (parsed == null) {
+      if (_isDayLabel(label) || day == 'Day') return label;
+      return '$day, $label';
+    }
 
     const months = [
       'Jan',
@@ -223,7 +282,7 @@ class _BookTutorPageState extends State<BookTutorPage> {
       'Nov',
       'Dec',
     ];
-    return '${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}';
+    return '$day, ${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}';
   }
 
   String _monthYearLabel() {
@@ -369,19 +428,6 @@ class _BookTutorPageState extends State<BookTutorPage> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            const Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Sun', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                                Text('Mon', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                                Text('Tue', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                                Text('Wed', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                                Text('Thu', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                                Text('Fri', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                                Text('Sat', style: TextStyle(fontSize: 9, color: Colors.black54)),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -397,24 +443,39 @@ class _BookTutorPageState extends State<BookTutorPage> {
                                       },
                                       borderRadius: BorderRadius.circular(20),
                                       child: Container(
-                                        width: 22,
-                                        height: 22,
+                                        width: 58,
+                                        height: 44,
                                         decoration: BoxDecoration(
                                           color: _selectedDateKey == dateKey
                                               ? const Color(0xFF0C8EDB)
                                               : const Color(0xFFF1F5F9),
-                                          shape: BoxShape.circle,
+                                          borderRadius: BorderRadius.circular(10),
                                         ),
                                         alignment: Alignment.center,
-                                        child: Text(
-                                          _dateChipLabel(dateKey),
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w700,
-                                            color: _selectedDateKey == dateKey
-                                                ? Colors.white
-                                                : Colors.black87,
-                                          ),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              _dayLabelForDateKey(dateKey),
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color: _selectedDateKey == dateKey
+                                                    ? Colors.white70
+                                                    : Colors.black54,
+                                              ),
+                                            ),
+                                            Text(
+                                              _dateChipLabel(dateKey),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: _selectedDateKey == dateKey
+                                                    ? Colors.white
+                                                    : Colors.black87,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -519,9 +580,8 @@ class _BookTutorPageState extends State<BookTutorPage> {
               _summaryRow('Duration', '$_selectedDuration min'),
               _summaryRow('Total Price', 'Rs ${total.toStringAsFixed(0)}', isBold: true),
               const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
+              Align(
+                alignment: Alignment.center,
                 child: ElevatedButton(
                   onPressed: canBook
                       ? () {
@@ -545,11 +605,17 @@ class _BookTutorPageState extends State<BookTutorPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2F7F56),
                     foregroundColor: Colors.white,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   ),
-                  child: const Text(
-                    'Proceed to Payment',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Proceed to Payment',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
               ),
