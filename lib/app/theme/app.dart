@@ -4,6 +4,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/app/theme/theme_mode_provider.dart';
+import 'package:tutorix/features/sensors/presentation/pages/dark_mode_sensor_page.dart';
+import 'package:tutorix/features/sensors/presentation/pages/light_sensor_page.dart';
+import 'package:tutorix/features/sensors/presentation/pages/motion_sensor_page.dart';
+import 'package:tutorix/features/sensors/presentation/pages/sensors_hub_page.dart';
 import 'package:tutorix/features/splash/presentation/pages/splash_page.dart';
 
 class App extends ConsumerWidget {
@@ -70,6 +74,12 @@ class App extends ConsumerWidget {
               displayColor: Colors.white,
             ),
       ),
+      routes: {
+        '/sensors': (_) => const SensorsHubPage(),
+        '/sensors/light': (_) => const LightSensorPage(),
+        '/sensors/dark-mode': (_) => const DarkModeSensorPage(),
+        '/sensors/motion': (_) => const MotionSensorPage(),
+      },
       home: SplashPage(),
     );
   }
