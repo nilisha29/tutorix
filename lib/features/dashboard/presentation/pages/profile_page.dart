@@ -450,10 +450,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/app/theme/theme_mode_provider.dart';
 import 'package:tutorix/features/auth/presentation/pages/login_page.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/change_password_page.dart';
+import 'package:tutorix/features/account/presentation/pages/change_password_page.dart';
 import 'package:tutorix/features/editprofile/presentation/pages/edit_profile.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/saved_tutors_page.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/sensors_page.dart';
+import 'package:tutorix/features/saved_tutors/presentation/pages/saved_tutors_page.dart';
 
 
 
@@ -466,43 +465,34 @@ class ProfilePage extends ConsumerStatefulWidget {
 
 class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
     final authNotifier = ref.read(authViewModelProvider.notifier);
     final themeMode = ref.watch(themeModeProvider);
     final themeNotifier = ref.read(themeModeProvider.notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final profilePath =
         authState.profilePicture ?? authState.authEntity?.profilePicture;
-    
-    print('[DEBUG PROFILE] Profile Path: $profilePath'); // Debug log
 
-    Widget getProfileAvatar() {
+    Widget profileAvatar() {
       if (profilePath == null || profilePath.isEmpty) {
         return CircleAvatar(
-          radius: 48,
-          child: const Icon(Icons.person, size: 40),
+          radius: 46,
+          backgroundColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFE2E8F0),
+          child: const Icon(Icons.person, size: 38),
         );
       }
 
       if (profilePath.startsWith('http')) {
-        print('[DEBUG PROFILE] Using NetworkImage for: $profilePath');
         return CircleAvatar(
-          radius: 48,
+          radius: 46,
           backgroundImage: NetworkImage(profilePath),
-          onBackgroundImageError: (exception, stackTrace) {
-            print('[DEBUG PROFILE] Failed to load network image: $exception');
-          },
+          onBackgroundImageError: (_, __) {},
         );
       } else {
-        print('[DEBUG PROFILE] Using FileImage for: $profilePath');
         return CircleAvatar(
-          radius: 48,
+          radius: 46,
           backgroundImage: FileImage(File(profilePath)),
         );
       }
@@ -528,109 +518,149 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            getProfileAvatar(),
-            const SizedBox(height: 12),
-
-            Text(
-              authState.authEntity?.fullName ?? "User",
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF111111) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? Colors.white24 : const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  profileAvatar(),
+                  const SizedBox(height: 10),
+                  Text(
+                    authState.authEntity?.fullName ?? "User",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    authState.authEntity?.email ?? "",
+                    style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                  ),
+                  if ((authState.authEntity?.phoneNumber ?? '').isNotEmpty)
+                    Text(
+                      authState.authEntity?.phoneNumber ?? "",
+                      style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                    ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const EditProfilePage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text("Edit Profile"),
+                    ),
+                  ),
+                ],
               ),
             ),
-            Text(authState.authEntity?.email ?? ""),
-            Text(authState.authEntity?.phoneNumber ?? ""),
+
             const SizedBox(height: 16),
 
-            OutlinedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const EditProfilePage(),
+            Text(
+              "Account Settings",
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white70 : Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF111111) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? Colors.white24 : const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.lock),
+                    title: const Text("Change Password"),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ChangePasswordPage(),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-              child: const Text("Edit Profile"),
+                  Divider(height: 1, color: isDark ? Colors.white12 : const Color(0xFFE5E7EB)),
+                  ListTile(
+                    leading: const Icon(Icons.bookmark),
+                    title: const Text("Saved Tutors"),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SavedTutorsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  Divider(height: 1, color: isDark ? Colors.white12 : const Color(0xFFE5E7EB)),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.dark_mode),
+                    title: const Text("Dark Mode"),
+                    value: themeMode == ThemeMode.dark,
+                    onChanged: (value) {
+                      themeNotifier.toggleDarkMode(value);
+                    },
+                  ),
+                ],
+              ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Account Settings",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF111111) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? Colors.white24 : const Color(0xFFE2E8F0)),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text(
+                  "Log Out",
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
                 ),
+                onTap: () {
+                  authNotifier.logout();
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
               ),
             ),
-
-            ListTile(
-              leading: const Icon(Icons.lock),
-              title: const Text("Change Password"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ChangePasswordPage(),
-                  ),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.bookmark),
-              title: const Text("Saved Tutors"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SavedTutorsPage(),
-                  ),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.sensors),
-              title: const Text("Sensors"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SensorsPage(),
-                  ),
-                );
-              },
-            ),
-
-            SwitchListTile(
-              secondary: const Icon(Icons.dark_mode),
-              title: const Text("Dark Mode"),
-              value: themeMode == ThemeMode.dark,
-              onChanged: (value) {
-                themeNotifier.toggleDarkMode(value);
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text(
-                "Log Out",
-                style: TextStyle(color: Colors.red),
+            const SizedBox(height: 8),
+            Text(
+              'Manage your account details and preferences.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.white54 : Colors.black45,
               ),
-              onTap: () {
-                authNotifier.logout();
-
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
-                );
-              },
             ),
           ],
         ),
