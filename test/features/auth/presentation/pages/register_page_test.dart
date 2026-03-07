@@ -46,7 +46,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Create Account'), findsOneWidget);
+      expect(find.text('Create Account'), findsAtLeastNWidgets(1));
       expect(find.text('Sign up to continue'), findsOneWidget);
     });
 

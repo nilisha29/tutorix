@@ -1,9 +1,13 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
+import 'package:tutorix/core/services/connectivity/network_info.dart';
+import 'package:tutorix/core/services/hive/hive_service.dart';
+import 'package:tutorix/features/auth/data/models/auth_hive_model.dart';
 import 'package:tutorix/features/auth/domain/entities/auth_entity.dart';
 import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
 
@@ -14,16 +18,59 @@ import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dar
 /// --------------------
 class MockApiClient extends Mock implements ApiClient {}
 
+class MockNetworkInfo extends Mock implements INetworkInfo {}
+
+class MockHiveService extends Mock implements HiveService {}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const secureStorageChannel =
+      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+
   late ProviderContainer container;
   late MockApiClient mockApiClient;
+  late MockNetworkInfo mockNetworkInfo;
+  late MockHiveService mockHiveService;
+
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(secureStorageChannel, (call) async {
+      return null;
+    });
+
+    registerFallbackValue(
+      AuthHiveModel(
+        authId: '1',
+        fullName: 'John Doe',
+        email: 'john@gmail.com',
+        password: 'password123',
+      ),
+    );
+  });
+
+  tearDownAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(secureStorageChannel, null);
+  });
 
   setUp(() {
     mockApiClient = MockApiClient();
+    mockNetworkInfo = MockNetworkInfo();
+    mockHiveService = MockHiveService();
+
+    when(() => mockNetworkInfo.isConnected).thenAnswer((_) async => true);
+    when(() => mockHiveService.registerUser(any()))
+        .thenAnswer((invocation) async => invocation.positionalArguments.first as AuthHiveModel);
+    when(() => mockHiveService.setCurrentAuthId(any()))
+        .thenAnswer((_) async {});
+    when(() => mockHiveService.logoutUser()).thenAnswer((_) async {});
 
     container = ProviderContainer(
       overrides: [
         apiClientProvider.overrideWithValue(mockApiClient),
+        networkInfoProvider.overrideWithValue(mockNetworkInfo),
+        hiveServiceProvider.overrideWithValue(mockHiveService),
       ],
     );
   });
