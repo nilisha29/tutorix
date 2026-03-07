@@ -847,10 +847,13 @@ import 'package:tutorix/core/widgets/category_chip.dart';
 import 'package:tutorix/core/widgets/tutor_card.dart';
 import 'package:tutorix/core/widgets/recommended_card.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/category_tutors_page.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/messages_inbox_page.dart';
+import 'package:tutorix/core/services/connectivity/network_info.dart';
+import 'package:tutorix/core/constants/hive_table_constant.dart';
+import 'package:tutorix/core/services/hive/hive_service.dart';
+import 'package:tutorix/features/tutors/presentation/pages/category_tutors_page.dart';
+import 'package:tutorix/features/messaging/presentation/pages/messages_inbox_page.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/search_page.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/tutor_profile_page.dart';
+import 'package:tutorix/features/tutors/presentation/pages/tutor_profile_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -878,11 +881,54 @@ class _HomePageState extends ConsumerState<HomePage> {
       _tutorError = null;
     });
 
+    final hasInternet = await ref.read(networkInfoProvider).isConnected;
+    final hiveService = ref.read(hiveServiceProvider);
+    if (!hasInternet) {
+      final cachedRaw = hiveService.getCachedData(HiveTableConstant.tutorsCacheKey);
+      final cachedTutors = _extractTutorMaps(cachedRaw)
+          .map(_HomeTutorItem.fromJson)
+          .toList();
+
+      if (cachedTutors.isNotEmpty) {
+        cachedTutors.sort((a, b) => b.ratingValue.compareTo(a.ratingValue));
+        final subjects = <String>{};
+        for (final tutor in cachedTutors) {
+          for (final subject in tutor.subjectList) {
+            final normalized = subject.trim();
+            if (normalized.isNotEmpty) subjects.add(normalized);
+          }
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _topTutors = cachedTutors.take(6).toList();
+          _recommendedTutors = cachedTutors.skip(1).take(4).toList();
+          if (_recommendedTutors.isEmpty) {
+            _recommendedTutors = cachedTutors.take(4).toList();
+          }
+          _backendSubjects = subjects.take(12).toList();
+          _loadingTutors = false;
+          _tutorError = null;
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _loadingTutors = false;
+        _tutorError = 'Offline mode: connect internet to load tutors.';
+      });
+      return;
+    }
+
     final apiClient = ref.read(apiClientProvider);
 
     try {
       final response = await _requestTutors(apiClient)
           .timeout(const Duration(seconds: 15));
+
+      await hiveService.setCachedData(HiveTableConstant.tutorsCacheKey, response.data);
+
       final allTutors = _extractTutorMaps(response.data)
           .map(_HomeTutorItem.fromJson)
           .toList();
