@@ -1254,6 +1254,9 @@ import 'package:path/path.dart' as p;
 
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
+import 'package:tutorix/core/services/connectivity/network_info.dart';
+import 'package:tutorix/core/services/hive/hive_service.dart';
+import 'package:tutorix/features/auth/data/models/auth_hive_model.dart';
 import 'package:tutorix/features/auth/domain/entities/auth_entity.dart';
 import 'package:tutorix/features/auth/presentation/state/auth_state.dart';
 
@@ -1309,6 +1312,66 @@ class AuthViewModel extends Notifier<AuthState> {
       token = token.substring(1, token.length - 1).trim();
     }
     return token;
+  }
+
+  AuthEntity _entityFromHive(AuthHiveModel user) {
+    final profileUrl = user.profilePicture != null
+        ? _fixLocalhostUrl(user.profilePicture)
+        : null;
+
+    return AuthEntity(
+      authId: user.authId,
+      token: user.token ?? '',
+      fullName: user.fullName,
+      email: user.email,
+      username: user.username,
+      phoneNumber: user.phoneNumber,
+      address: user.address,
+      profilePicture: profileUrl,
+      password: user.password,
+    );
+  }
+
+  Future<void> _saveUserToHive({
+    required Map<String, dynamic> user,
+    required String password,
+    required String token,
+  }) async {
+    final hiveService = ref.read(hiveServiceProvider);
+
+    final email = (user['email'] ?? '').toString().trim();
+    if (email.isEmpty) return;
+
+    final authIdRaw =
+        (user['_id'] ?? user['id'] ?? user['authId'] ?? '').toString().trim();
+    final authId = authIdRaw.isNotEmpty ? authIdRaw : email.toLowerCase();
+
+    final profileRaw = (user['profileImage'] ?? user['profilePicture'])?.toString();
+    final profileUrl =
+        profileRaw == null || profileRaw.isEmpty ? null : _fixLocalhostUrl(profileRaw);
+
+    final fullName = (user['fullName'] ?? '').toString().trim();
+    final firstName = (user['firstName'] ?? '').toString().trim();
+    final lastName = (user['lastName'] ?? '').toString().trim();
+    final mergedName = '$firstName $lastName'.trim();
+    final fallbackName = email.split('@').first;
+
+    final model = AuthHiveModel(
+      authId: authId,
+      fullName: fullName.isNotEmpty
+          ? fullName
+          : (mergedName.isNotEmpty ? mergedName : fallbackName),
+      email: email,
+      phoneNumber: user['phoneNumber']?.toString(),
+      address: user['address']?.toString(),
+      username: user['username']?.toString(),
+      password: password,
+      profilePicture: profileUrl,
+      token: token,
+    );
+
+    await hiveService.registerUser(model);
+    await hiveService.setCurrentAuthId(authId);
   }
 
   // =========================
@@ -1415,21 +1478,73 @@ class AuthViewModel extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
-
-     print("BASE URL: ${ApiEndpoints.baseUrl}");
-  print("LOGIN URL: ${ApiEndpoints.baseUrl + ApiEndpoints.userLogin}");
-  
     state = state.copyWith(status: AuthStatus.loading);
 
     try {
+      final hasInternet = await ref.read(networkInfoProvider).isConnected;
+
+      if (!hasInternet) {
+        final hiveService = ref.read(hiveServiceProvider);
+        final normalizedEmail = email.trim();
+        final normalizedPassword = password.trim();
+        final offlineUser =
+            await hiveService.loginUser(normalizedEmail, normalizedPassword);
+
+        final userForOffline = offlineUser ??
+            hiveService.getUserByEmail(normalizedEmail) ??
+            hiveService.getSessionUser() ??
+            hiveService.getAnyCachedUser();
+
+        if (userForOffline != null) {
+          final sessionId = (userForOffline.authId ?? userForOffline.email).trim();
+          if (sessionId.isNotEmpty) {
+            await hiveService.setCurrentAuthId(sessionId);
+          }
+
+          final authEntity = _entityFromHive(userForOffline);
+          state = state.copyWith(
+            status: AuthStatus.authenticated,
+            authEntity: authEntity,
+            profilePicture: authEntity.profilePicture,
+          );
+          return;
+        }
+
+        state = state.copyWith(
+          status: AuthStatus.error,
+          errorMessage:
+              'No internet connection. Please connect to the internet first.',
+        );
+        return;
+      }
+
       final response = await _apiClient.post(
         ApiEndpoints.userLogin,
         data: {"email": email, "password": password},
       );
 
-      if (response.statusCode == 200) {
-        final user = response.data['data'];
-        final token = _sanitizeToken(response.data['token']?.toString());
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        final responseMap = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : <String, dynamic>{};
+
+        final dataMap = responseMap['data'] is Map
+          ? Map<String, dynamic>.from(responseMap['data'] as Map)
+          : <String, dynamic>{};
+
+        final user = responseMap['user'] is Map
+          ? Map<String, dynamic>.from(responseMap['user'] as Map)
+          : (dataMap['user'] is Map
+            ? Map<String, dynamic>.from(dataMap['user'] as Map)
+            : (dataMap.isNotEmpty ? dataMap : responseMap));
+
+        final token = _sanitizeToken(
+          responseMap['token']?.toString() ??
+            dataMap['token']?.toString() ??
+            user['token']?.toString(),
+        );
 
         if (token.isNotEmpty) {
           await _secureStorage.write(key: _tokenKey, value: token);
@@ -1443,17 +1558,21 @@ class AuthViewModel extends Notifier<AuthState> {
                 : '${ApiEndpoints.mediaServerUrl}${user['profileImage']}')
             : null;
 
-        print('[LOGIN] ✅ Logged in successfully. Profile image: $profileUrl');
-
         final authEntity = AuthEntity(
-          authId: user['_id'],
+          authId: (user['_id'] ?? user['id'] ?? user['authId'])?.toString(),
           token: token,
-          fullName: user['fullName'],
-          email: user['email'],
-          username: user['username'],
-          phoneNumber: user['phoneNumber'],
-          address: user['address'],
+          fullName: (user['fullName'] ?? '').toString(),
+          email: (user['email'] ?? email).toString(),
+          username: user['username']?.toString(),
+          phoneNumber: user['phoneNumber']?.toString(),
+          address: user['address']?.toString(),
           profilePicture: profileUrl,
+        );
+
+        await _saveUserToHive(
+          user: user,
+          password: password,
+          token: token,
         );
 
         state = state.copyWith(
@@ -1461,8 +1580,6 @@ class AuthViewModel extends Notifier<AuthState> {
           authEntity: authEntity,
           profilePicture: profileUrl,
         );
-        
-        print('[LOGIN] ✅ Logged in successfully. Profile image: $profileUrl');
       } else {
         state = state.copyWith(
           status: AuthStatus.error,
