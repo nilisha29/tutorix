@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:tutorix/core/error/failures.dart';
 import 'package:tutorix/features/auth/domain/entities/auth_entity.dart';
 import 'package:tutorix/features/auth/domain/repositories/auth_repository.dart';
 import 'package:tutorix/features/auth/domain/usecases/get_current_user_usecase.dart';
@@ -33,33 +34,57 @@ void main() {
 
   group('GetCurrentUser Usecase Test', () {
     test('✅ should return AuthEntity when user is logged in', () async {
-      // arrange
       when(() => mockAuthRepository.getCurrentUser())
           .thenAnswer((_) async => Right(authEntity));
 
-      // act
       final result = await getCurrentUserUsecase();
 
-      // assert
       expect(result, Right(authEntity));
       verify(() => mockAuthRepository.getCurrentUser()).called(1);
     });
 
-    // test('❌ should return Failure when no user is found', () async {
-    //   // arrange
-    //   when(() => mockAuthRepository.getCurrentUser()).thenAnswer(
-    //     (_) async => Left(ServerFailure('User not found')),
-    //   );
+    test('❌ should return failure when repository has no user', () async {
+      const failure = ValidationFailure(message: 'User not found');
+      when(() => mockAuthRepository.getCurrentUser())
+          .thenAnswer((_) async => const Left(failure));
 
-    //   // act
-    //   final result = await getCurrentUserUsecase();
+      final result = await getCurrentUserUsecase();
 
-    //   // assert
-    //   expect(
-    //     result,
-    //     Left(ServerFailure('User not found')),
-    //   );
-    //   verify(() => mockAuthRepository.getCurrentUser()).called(1);
-    // });
+      expect(result, const Left(failure));
+      verify(() => mockAuthRepository.getCurrentUser()).called(1);
+    });
+
+    test('📦 should return same entity instance from repository result', () async {
+      when(() => mockAuthRepository.getCurrentUser())
+          .thenAnswer((_) async => Right(authEntity));
+
+      final result = await getCurrentUserUsecase();
+
+      expect(result, Right(authEntity));
+      result.fold(
+        (_) => fail('Expected Right<AuthEntity> but got Left<Failure>'),
+        (entity) => expect(identical(entity, authEntity), true),
+      );
+    });
+
+    test('🔁 should call repository on each invocation', () async {
+      when(() => mockAuthRepository.getCurrentUser())
+          .thenAnswer((_) async => Right(authEntity));
+
+      await getCurrentUserUsecase();
+      await getCurrentUserUsecase();
+
+      verify(() => mockAuthRepository.getCurrentUser()).called(2);
+    });
+
+    test('📞 should call only getCurrentUser method in repository', () async {
+      when(() => mockAuthRepository.getCurrentUser())
+          .thenAnswer((_) async => Right(authEntity));
+
+      await getCurrentUserUsecase();
+
+      verify(() => mockAuthRepository.getCurrentUser()).called(1);
+      verifyNoMoreInteractions(mockAuthRepository);
+    });
   });
 }

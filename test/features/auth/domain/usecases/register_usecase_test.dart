@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:tutorix/core/error/failures.dart';
 import 'package:tutorix/features/auth/domain/entities/auth_entity.dart';
 import 'package:tutorix/features/auth/domain/repositories/auth_repository.dart';
 import 'package:tutorix/features/auth/domain/usecases/register_usecase.dart';
@@ -46,33 +47,77 @@ void main() {
 
   group('Register Usecase Test', () {
     test('✅ should return true when registration is successful', () async {
-      // arrange
       when(() => mockAuthRepository.register(any()))
           .thenAnswer((_) async => const Right(true));
 
-      // act
       final result = await registerUsecase(registerParams);
 
-      // assert
       expect(result, const Right(true));
       verify(() => mockAuthRepository.register(any())).called(1);
     });
 
-    // test('❌ should return Failure when registration fails', () async {
-    //   // arrange
-    //   when(() => mockAuthRepository.register(any())).thenAnswer(
-    //     (_) async => Left(ServerFailure('Registration failed')),
-    //   );
+    test('❌ should return failure when repository returns failure', () async {
+      const failure = ApiFailure(message: 'Registration failed', statusCode: 400);
+      when(() => mockAuthRepository.register(any()))
+          .thenAnswer((_) async => const Left(failure));
 
-    //   // act
-    //   final result = await registerUsecase(registerParams);
+      final result = await registerUsecase(registerParams);
 
-    //   // assert
-    //   expect(
-    //     result,
-    //     Left(ServerFailure('Registration failed')),
-    //   );
-    //   verify(() => mockAuthRepository.register(any())).called(1);
-    // });
+      expect(result, const Left(failure));
+      verify(() => mockAuthRepository.register(any())).called(1);
+    });
+
+    test('📦 should map params to AuthEntity fields before calling repository', () async {
+      late AuthEntity capturedEntity;
+      when(() => mockAuthRepository.register(any())).thenAnswer((invocation) async {
+        capturedEntity = invocation.positionalArguments.first as AuthEntity;
+        return const Right(true);
+      });
+
+      await registerUsecase(registerParams);
+
+      expect(capturedEntity.fullName, registerParams.fullName);
+      expect(capturedEntity.username, registerParams.username);
+      expect(capturedEntity.email, registerParams.email);
+      expect(capturedEntity.password, registerParams.password);
+      expect(capturedEntity.confirmPassword, registerParams.confirmPassword);
+      expect(capturedEntity.phoneNumber, registerParams.phoneNumber);
+      expect(capturedEntity.address, registerParams.address);
+      expect(capturedEntity.profilePicture, registerParams.profilePicture);
+      expect(capturedEntity.token, '');
+      expect(capturedEntity.authId, isNotEmpty);
+    });
+
+    test('🧪 should pass nullable optional fields as null when omitted', () async {
+      const params = RegisterUsecaseParams(
+        fullName: 'Jane Doe',
+        username: 'janedoe',
+        email: 'jane@gmail.com',
+      );
+
+      late AuthEntity capturedEntity;
+      when(() => mockAuthRepository.register(any())).thenAnswer((invocation) async {
+        capturedEntity = invocation.positionalArguments.first as AuthEntity;
+        return const Right(true);
+      });
+
+      await registerUsecase(params);
+
+      expect(capturedEntity.password, isNull);
+      expect(capturedEntity.confirmPassword, isNull);
+      expect(capturedEntity.phoneNumber, isNull);
+      expect(capturedEntity.address, isNull);
+      expect(capturedEntity.profilePicture, isNull);
+    });
+
+    test('🔁 should call repository exactly once per execution', () async {
+      when(() => mockAuthRepository.register(any()))
+          .thenAnswer((_) async => const Right(true));
+
+      await registerUsecase(registerParams);
+
+      verify(() => mockAuthRepository.register(any())).called(1);
+      verifyNoMoreInteractions(mockAuthRepository);
+    });
   });
 }
