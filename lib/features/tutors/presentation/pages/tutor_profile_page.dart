@@ -7,7 +7,7 @@ import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
 import 'package:tutorix/features/tutors/presentation/pages/book_tutor_page.dart';
 import 'package:tutorix/features/saved_tutors/presentation/state/saved_tutor_store.dart';
-import 'package:tutorix/features/messaging/presentation/pages/tutor_message_page.dart';
+import 'package:tutorix/features/messages/presentation/pages/tutor_message_page.dart';
 
 class TutorProfilePage extends ConsumerStatefulWidget {
   const TutorProfilePage({
