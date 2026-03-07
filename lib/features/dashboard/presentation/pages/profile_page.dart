@@ -450,7 +450,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/app/theme/theme_mode_provider.dart';
 import 'package:tutorix/features/auth/presentation/pages/login_page.dart';
 import 'package:tutorix/features/auth/presentation/view_model/auth_viewmodel.dart';
-import 'package:tutorix/features/account/presentation/pages/change_password_page.dart';
+import 'package:tutorix/features/auth/presentation/pages/change_password_page.dart';
 import 'package:tutorix/features/editprofile/presentation/pages/edit_profile.dart';
 import 'package:tutorix/features/saved_tutors/presentation/pages/saved_tutors_page.dart';
 

@@ -851,7 +851,7 @@ import 'package:tutorix/core/services/connectivity/network_info.dart';
 import 'package:tutorix/core/constants/hive_table_constant.dart';
 import 'package:tutorix/core/services/hive/hive_service.dart';
 import 'package:tutorix/features/tutors/presentation/pages/category_tutors_page.dart';
-import 'package:tutorix/features/messaging/presentation/pages/messages_inbox_page.dart';
+import 'package:tutorix/features/messages/presentation/pages/messages_inbox_page.dart';
 import 'package:tutorix/features/dashboard/presentation/pages/search_page.dart';
 import 'package:tutorix/features/tutors/presentation/pages/tutor_profile_page.dart';
 
