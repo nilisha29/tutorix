@@ -1,11 +1,17 @@
 import 'dart:io';
+import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/tutor_profile_page.dart';
+import 'package:tutorix/core/constants/hive_table_constant.dart';
+import 'package:tutorix/core/services/connectivity/network_info.dart';
+import 'package:tutorix/core/services/hive/hive_service.dart';
+import 'package:tutorix/features/tutors/presentation/pages/tutor_profile_page.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -16,6 +22,12 @@ class SearchPage extends ConsumerStatefulWidget {
 
 class _SearchPageState extends ConsumerState<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
+  StreamSubscription<AccelerometerEvent>? _shakeSubscription;
+  DateTime? _lastShakeAt;
+
+  static const double _shakeThreshold = 17.0;
+  static const Duration _shakeCooldown = Duration(milliseconds: 1400);
+
   List<_TutorListItem> _allTutors = [];
   List<_TutorListItem> _visibleTutors = [];
   bool _isLoading = true;
@@ -25,14 +37,35 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   void initState() {
     super.initState();
     _searchController.addListener(_applySearch);
+    _listenForShakeReload();
     _fetchTutors();
   }
 
   @override
   void dispose() {
+    _shakeSubscription?.cancel();
     _searchController.removeListener(_applySearch);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _listenForShakeReload() {
+    _shakeSubscription = accelerometerEventStream().listen((event) {
+      if (!mounted || _isLoading) return;
+
+      final now = DateTime.now();
+      final last = _lastShakeAt;
+      if (last != null && now.difference(last) < _shakeCooldown) return;
+
+      final magnitude = math.sqrt(
+        (event.x * event.x) + (event.y * event.y) + (event.z * event.z),
+      );
+
+      if (magnitude >= _shakeThreshold) {
+        _lastShakeAt = now;
+        _fetchTutors();
+      }
+    });
   }
 
   Future<void> _fetchTutors() async {
@@ -41,10 +74,41 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _errorText = null;
     });
 
+    final hasInternet = await ref.read(networkInfoProvider).isConnected;
+    final hiveService = ref.read(hiveServiceProvider);
+    if (!hasInternet) {
+      final cachedRaw = hiveService.getCachedData(HiveTableConstant.tutorsCacheKey);
+      final cachedItems = _extractTutorMaps(cachedRaw)
+          .map(_TutorListItem.fromJson)
+          .toList();
+
+      if (cachedItems.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _allTutors = cachedItems;
+          _visibleTutors = _filterByQuery(cachedItems, _searchController.text.trim());
+          _isLoading = false;
+          _errorText = null;
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorText = 'Offline mode: connect internet to search tutors.';
+      });
+      return;
+    }
+
     final apiClient = ref.read(apiClientProvider);
 
     try {
-      final response = await _requestTutors(apiClient);
+      final response = await _requestTutors(apiClient)
+          .timeout(const Duration(seconds: 15));
+
+      await hiveService.setCachedData(HiveTableConstant.tutorsCacheKey, response.data);
+
       final items = _extractTutorMaps(response.data)
           .map(_TutorListItem.fromJson)
           .toList();
@@ -69,6 +133,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       setState(() {
         _isLoading = false;
         _errorText = 'Failed to load tutors';
+      });
+    } on TimeoutException {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorText = 'Request timed out. Please try again.';
       });
     }
   }
