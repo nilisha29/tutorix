@@ -22,9 +22,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'dart:async';
+import 'dart:math' as math;
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/booking_store.dart';
+import 'package:tutorix/core/constants/hive_table_constant.dart';
+import 'package:tutorix/core/services/connectivity/network_info.dart';
+import 'package:tutorix/core/services/hive/hive_service.dart';
+import 'package:tutorix/features/bookings/presentation/state/booking_store.dart';
 
 class BookingPage extends ConsumerStatefulWidget {
   const BookingPage({super.key});
@@ -35,17 +41,77 @@ class BookingPage extends ConsumerStatefulWidget {
 
 class _BookingPageState extends ConsumerState<BookingPage> {
   final TextEditingController _searchController = TextEditingController();
+  StreamSubscription<AccelerometerEvent>? _shakeSubscription;
+  DateTime? _lastShakeAt;
+
+  static const double _shakeThreshold = 17.0;
+  static const Duration _shakeCooldown = Duration(milliseconds: 1400);
+
   String _query = '';
   bool _loading = false;
+  String? _errorText;
 
   @override
   void initState() {
     super.initState();
+    _listenForShakeReload();
     _fetchBookings();
   }
 
+  void _listenForShakeReload() {
+    _shakeSubscription = accelerometerEventStream().listen((event) {
+      if (!mounted || _loading) return;
+
+      final now = DateTime.now();
+      final last = _lastShakeAt;
+      if (last != null && now.difference(last) < _shakeCooldown) return;
+
+      final magnitude = math.sqrt(
+        (event.x * event.x) + (event.y * event.y) + (event.z * event.z),
+      );
+
+      if (magnitude >= _shakeThreshold) {
+        _lastShakeAt = now;
+        _fetchBookings();
+      }
+    });
+  }
+
   Future<void> _fetchBookings() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _errorText = null;
+    });
+
+    final hasInternet = await ref.read(networkInfoProvider).isConnected;
+    final hiveService = ref.read(hiveServiceProvider);
+    if (!hasInternet) {
+      final cachedRaw = hiveService.getCachedData(HiveTableConstant.bookingsCacheKey);
+      final cachedRows = _extractList(cachedRaw);
+      final cachedBookings = cachedRows
+          .map(_toBookingRecord)
+          .whereType<BookingRecord>()
+          .toList();
+      final mergedCached = _mergeWithLocalBookings(cachedBookings);
+
+      if (mergedCached.isNotEmpty) {
+        BookingStore.setBookings(mergedCached);
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _errorText = null;
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _errorText = 'Offline mode: connect internet to refresh bookings.';
+      });
+      return;
+    }
+
     final apiClient = ref.read(apiClientProvider);
 
     final endpointCandidates = <String>[
@@ -59,11 +125,15 @@ class _BookingPageState extends ConsumerState<BookingPage> {
         try {
           final response = await apiClient.get(endpoint);
           final rows = _extractList(response.data);
+
+            await hiveService.setCachedData(HiveTableConstant.bookingsCacheKey, rows);
+
           final parsed = rows
               .map(_toBookingRecord)
               .whereType<BookingRecord>()
               .toList();
-          BookingStore.setBookings(parsed);
+            final merged = _mergeWithLocalBookings(parsed);
+            BookingStore.setBookings(merged);
           if (!mounted) return;
           setState(() => _loading = false);
           return;
@@ -77,9 +147,9 @@ class _BookingPageState extends ConsumerState<BookingPage> {
       }
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load bookings from backend')),
-      );
+      setState(() {
+        _errorText = 'Failed to load bookings from backend';
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -89,6 +159,24 @@ class _BookingPageState extends ConsumerState<BookingPage> {
     if (raw is Map && raw['data'] is List) return raw['data'] as List<dynamic>;
     if (raw is List) return raw;
     return const [];
+  }
+
+  List<BookingRecord> _mergeWithLocalBookings(List<BookingRecord> remote) {
+    final local = BookingStore.bookings.value;
+    final localOnly = local.where((item) => !_containsBooking(remote, item)).toList();
+    final merged = <BookingRecord>[...localOnly, ...remote];
+    merged.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return merged;
+  }
+
+  bool _containsBooking(List<BookingRecord> haystack, BookingRecord needle) {
+    return haystack.any((row) {
+      final sameTutor = row.tutorId.trim() == needle.tutorId.trim();
+      final sameDate = row.dateLabel.trim() == needle.dateLabel.trim();
+      final sameTime = row.timeLabel.trim() == needle.timeLabel.trim();
+      final sameAmount = (row.totalPrice - needle.totalPrice).abs() < 0.01;
+      return sameTutor && sameDate && sameTime && sameAmount;
+    });
   }
 
   BookingRecord? _toBookingRecord(dynamic item) {
@@ -170,6 +258,7 @@ class _BookingPageState extends ConsumerState<BookingPage> {
 
   @override
   void dispose() {
+    _shakeSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -217,6 +306,8 @@ class _BookingPageState extends ConsumerState<BookingPage> {
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
+                  : _errorText != null
+                  ? Center(child: Text(_errorText!))
                   : ValueListenableBuilder<List<BookingRecord>>(
                 valueListenable: BookingStore.bookings,
                 builder: (context, bookings, _) {
