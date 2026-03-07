@@ -229,113 +229,44 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Reset Password'),
         centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                _linkSent
-                    ? 'Check your email for the reset token/link, then complete your new password below.'
-                    : 'Enter your account email. We will send a password reset link.',
-                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                validator: (value) {
-                  final email = value?.trim() ?? '';
-                  if (email.isEmpty) return 'Please enter your email';
-                  if (!email.contains('@')) return 'Please enter a valid email';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 14),
-              ElevatedButton(
-                onPressed: _loading ? null : _sendResetLink,
-                child: _loading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Send Reset Link'),
-              ),
-              if (_linkSent) ...[
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _tokenController,
-                  decoration: InputDecoration(
-                    labelText: 'Reset Token or Link',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  validator: (value) {
-                    if (!_linkSent) return null;
-                    if ((value ?? '').trim().isEmpty) {
-                      return 'Please enter the reset token';
-                    }
-                    return null;
-                  },
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  _linkSent
+                      ? 'Check your email for the reset token/link, then complete your new password below.'
+                      : 'Enter your account email. We will send a password reset link.',
+                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
-                  controller: _newPasswordController,
-                  obscureText: _hideNewPassword,
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'New Password',
+                    labelText: 'Email',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    suffixIcon: IconButton(
-                      icon: Icon(_hideNewPassword ? Icons.visibility : Icons.visibility_off),
-                      onPressed: () => setState(() => _hideNewPassword = !_hideNewPassword),
-                    ),
                   ),
                   validator: (value) {
-                    if (!_linkSent) return null;
-                    final v = (value ?? '').trim();
-                    if (v.isEmpty) return 'Please enter new password';
-                    if (v.length < 6) return 'Password must be at least 6 characters';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _hideConfirmPassword,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    suffixIcon: IconButton(
-                      icon: Icon(_hideConfirmPassword ? Icons.visibility : Icons.visibility_off),
-                      onPressed: () => setState(() => _hideConfirmPassword = !_hideConfirmPassword),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (!_linkSent) return null;
-                    final v = (value ?? '').trim();
-                    if (v.isEmpty) return 'Please confirm new password';
-                    if (v != _newPasswordController.text.trim()) {
-                      return 'Passwords do not match';
-                    }
+                    final email = value?.trim() ?? '';
+                    if (email.isEmpty) return 'Please enter your email';
+                    if (!email.contains('@')) return 'Please enter a valid email';
                     return null;
                   },
                 ),
                 const SizedBox(height: 14),
                 ElevatedButton(
-                  onPressed: _loading ? null : _resetPassword,
+                  onPressed: _loading ? null : _sendResetLink,
                   child: _loading
                       ? const SizedBox(
                           width: 16,
@@ -345,10 +276,84 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Reset Password'),
+                      : const Text('Send Reset Link'),
                 ),
+                if (_linkSent) ...[
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _tokenController,
+                    decoration: InputDecoration(
+                      labelText: 'Reset Token or Link',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    validator: (value) {
+                      if (!_linkSent) return null;
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Please enter the reset token';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _newPasswordController,
+                    obscureText: _hideNewPassword,
+                    decoration: InputDecoration(
+                      labelText: 'New Password',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      suffixIcon: IconButton(
+                        icon: Icon(_hideNewPassword ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () => setState(() => _hideNewPassword = !_hideNewPassword),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (!_linkSent) return null;
+                      final v = (value ?? '').trim();
+                      if (v.isEmpty) return 'Please enter new password';
+                      if (v.length < 6) return 'Password must be at least 6 characters';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    obscureText: _hideConfirmPassword,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      suffixIcon: IconButton(
+                        icon: Icon(_hideConfirmPassword ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () => setState(() => _hideConfirmPassword = !_hideConfirmPassword),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (!_linkSent) return null;
+                      final v = (value ?? '').trim();
+                      if (v.isEmpty) return 'Please confirm new password';
+                      if (v != _newPasswordController.text.trim()) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  ElevatedButton(
+                    onPressed: _loading ? null : _resetPassword,
+                    child: _loading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Reset Password'),
+                  ),
+                ],
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
               ],
-            ],
+            ),
           ),
         ),
       ),
