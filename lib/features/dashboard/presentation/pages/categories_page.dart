@@ -5,7 +5,7 @@
 // import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:tutorix/core/api/api_client.dart';
 // import 'package:tutorix/core/api/api_endpoints.dart';
-// import 'package:tutorix/features/dashboard/presentation/pages/category_tutors_page.dart';
+// import 'package:tutorix/features/tutors/presentation/pages/category_tutors_page.dart';
 
 // class CategoriesPage extends ConsumerStatefulWidget {
 //   const CategoriesPage({super.key});
@@ -524,7 +524,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
-import 'package:tutorix/features/dashboard/presentation/pages/category_tutors_page.dart';
+import 'package:tutorix/core/constants/hive_table_constant.dart';
+import 'package:tutorix/core/services/connectivity/network_info.dart';
+import 'package:tutorix/core/services/hive/hive_service.dart';
+import 'package:tutorix/features/tutors/presentation/pages/category_tutors_page.dart';
 
 class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
@@ -550,6 +553,36 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
       _error = null;
     });
 
+    final hasInternet = await ref.read(networkInfoProvider).isConnected;
+    final hiveService = ref.read(hiveServiceProvider);
+    if (!hasInternet) {
+      final cachedRaw = hiveService.getCachedData(HiveTableConstant.categoriesCacheKey);
+      final cachedList = cachedRaw is List
+          ? cachedRaw.whereType<Map>().map((e) {
+              final map = <String, dynamic>{};
+              e.forEach((key, value) => map[key.toString()] = value);
+              return _CategoryItem.fromJson(map);
+            }).toList()
+          : <_CategoryItem>[];
+
+      if (cachedList.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _categories = cachedList;
+          _isLoading = false;
+          _error = null;
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = 'Offline mode: connect internet to load categories.';
+      });
+      return;
+    }
+
     final apiClient = ref.read(apiClientProvider);
 
     try {
@@ -564,6 +597,11 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
           tutorCount: mapCount ?? item.tutorCount,
         );
       }).toList();
+
+      await hiveService.setCachedData(
+        HiveTableConstant.categoriesCacheKey,
+        merged.map((item) => item.toJson()).toList(),
+      );
 
       if (!mounted) return;
 
@@ -843,6 +881,17 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
+      appBar: AppBar(
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        foregroundColor: isDark ? Colors.white : Colors.black,
+        elevation: 0,
+        leading: const BackButton(),
+        centerTitle: true,
+        title: const Text(
+          'Categories',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -851,148 +900,129 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                   decoration: BoxDecoration(
                     color: isDark ? Colors.black : const Color(0xFFF1EEF8),
                   ),
-                  child: SafeArea(
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 8),
-                        Text(
-                          'Categories',
-                          style: TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.w800,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF2B2B33),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: GridView.builder(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                          itemCount:
+                              _categories.length + (_categories.length.isOdd ? 1 : 0),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: gridRatio,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Expanded(
-                          child: GridView.builder(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 4),
-                            itemCount:
-                                _categories.length + (_categories.length.isOdd ? 1 : 0),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: gridRatio,
-                            ),
-                            itemBuilder: (context, index) {
-                              final isPlaceholder =
-                                  _categories.length.isOdd &&
-                                      index == _categories.length;
+                          itemBuilder: (context, index) {
+                            final isPlaceholder =
+                                _categories.length.isOdd && index == _categories.length;
 
-                              if (isPlaceholder) {
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF111111)
-                                        : const Color(0xFFEDEAF2),
-                                    borderRadius: BorderRadius.circular(22),
-                                  ),
-                                );
-                              }
-
-                              final category = _categories[index];
-                              final style = _styleForIndex(index);
-
-                              final subtitle = category.tutorCount == null
-                                  ? 'Tutors available'
-                                  : '${category.tutorCount} tutors available';
-
-                              return InkWell(
-                                borderRadius: BorderRadius.circular(22),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => CategoryTutorsPage(
-                                        categoryName: category.name,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(22),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [style.start, style.end],
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Color(0x22000000),
-                                        blurRadius: 10,
-                                        offset: Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 48,
-                                        height: 48,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.25),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          _iconForCategory(category.name),
-                                          size: 26,
-                                          color: style.titleColor,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Flexible(
-                                              child: Text(
-                                                category.name,
-                                                maxLines: 2,
-                                                overflow:
-                                                    TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 17,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: style.titleColor,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Flexible(
-                                              child: Text(
-                                                subtitle,
-                                                maxLines: 2,
-                                                overflow:
-                                                    TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: style.titleColor
-                                                      .withOpacity(0.9),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                            if (isPlaceholder) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF111111)
+                                      : const Color(0xFFEDEAF2),
+                                  borderRadius: BorderRadius.circular(22),
                                 ),
                               );
-                            },
-                          ),
+                            }
+
+                            final category = _categories[index];
+                            final style = _styleForIndex(index);
+
+                            final subtitle = category.tutorCount == null
+                                ? 'Tutors available'
+                                : '${category.tutorCount} tutors available';
+
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(22),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => CategoryTutorsPage(
+                                      categoryName: category.name,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(22),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [style.start, style.end],
+                                  ),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x22000000),
+                                      blurRadius: 10,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.25),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        _iconForCategory(category.name),
+                                        size: 26,
+                                        color: style.titleColor,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              category.name,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.w800,
+                                                color: style.titleColor,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Flexible(
+                                            child: Text(
+                                              subtitle,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color:
+                                                    style.titleColor.withOpacity(0.9),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
     );
@@ -1039,6 +1069,14 @@ class _CategoryItem {
             json['totalTutors'],
       ),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'description': description,
+      'tutorCount': tutorCount,
+    };
   }
 }
 
