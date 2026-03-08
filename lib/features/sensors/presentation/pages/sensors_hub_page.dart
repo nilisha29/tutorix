@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tutorix/features/sensors/presentation/pages/dark_mode_sensor_page.dart';
-import 'package:tutorix/features/sensors/presentation/pages/light_sensor_page.dart';
 import 'package:tutorix/features/sensors/presentation/pages/accelerometer_sensor_page.dart';
 
 
@@ -18,18 +17,9 @@ class SensorsHubPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _SensorNavTile(
-            icon: Icons.light_mode,
-            title: 'Light Sensor',
-            subtitle: 'Ambient light + brightness recommendation',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LightSensorPage()),
-            ),
-          ),
-          _SensorNavTile(
             icon: Icons.dark_mode,
             title: 'Dark Mode Sensor',
-            subtitle: 'Auto dark mode based on light threshold',
+            subtitle: 'Enable or disable dark mode',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const DarkModeSensorPage()),
