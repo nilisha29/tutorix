@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/error/failures.dart';
+import 'package:tutorix/features/editprofile/data/repositories/edit_profile_repository_impl.dart';
 
 abstract interface class IEditProfileRepository {
   Future<Either<Failure, Map<String, dynamic>>> getProfile();
@@ -11,7 +12,5 @@ abstract interface class IEditProfileRepository {
 }
 
 final editProfileRepositoryProvider = Provider<IEditProfileRepository>((ref) {
-  throw UnimplementedError(
-    'editProfileRepositoryProvider must be overridden with a concrete implementation.',
-  );
+  return ref.read(editProfileRepositoryImplProvider);
 });

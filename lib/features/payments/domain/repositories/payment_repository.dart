@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/error/failures.dart';
+import 'package:tutorix/features/payments/data/repositories/payment_repository_impl.dart';
 
 abstract interface class IPaymentRepository {
   Future<Either<Failure, Map<String, dynamic>>> initiatePayment(
@@ -14,7 +15,5 @@ abstract interface class IPaymentRepository {
 }
 
 final paymentRepositoryProvider = Provider<IPaymentRepository>((ref) {
-  throw UnimplementedError(
-    'paymentRepositoryProvider must be overridden with a concrete implementation.',
-  );
+  return ref.read(paymentRepositoryImplProvider);
 });

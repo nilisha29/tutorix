@@ -3,24 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
-class MotionSensorPage extends StatefulWidget {
-  const MotionSensorPage({super.key});
+class AccelerometerSensorPage extends StatefulWidget {
+  const AccelerometerSensorPage({super.key});
 
   @override
-  State<MotionSensorPage> createState() => _MotionSensorPageState();
+  State<AccelerometerSensorPage> createState() => _AccelerometerSensorPageState();
 }
 
-class _MotionSensorPageState extends State<MotionSensorPage> {
+class _AccelerometerSensorPageState extends State<AccelerometerSensorPage> {
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
-  StreamSubscription<UserAccelerometerEvent>? _userAccelerometerSubscription;
-  StreamSubscription<GyroscopeEvent>? _gyroscopeSubscription;
-  StreamSubscription<MagnetometerEvent>? _magnetometerSubscription;
   Timer? _noDataTimer;
 
   AccelerometerEvent? _accelerometer;
-  UserAccelerometerEvent? _userAccelerometer;
-  GyroscopeEvent? _gyroscope;
-  MagnetometerEvent? _magnetometer;
   String? _sensorError;
 
   @override
@@ -29,12 +23,9 @@ class _MotionSensorPageState extends State<MotionSensorPage> {
     _noDataTimer = Timer(const Duration(seconds: 4), () {
       if (!mounted) return;
       if (_accelerometer == null &&
-          _userAccelerometer == null &&
-          _gyroscope == null &&
-          _magnetometer == null &&
           _sensorError == null) {
         setState(() {
-          _sensorError = 'No motion sensor readings received on this device';
+          _sensorError = 'No accelerometer readings received on this device';
         });
       }
     });
@@ -52,46 +43,11 @@ class _MotionSensorPageState extends State<MotionSensorPage> {
         _sensorError = 'Accelerometer not available on this device';
       });
     });
-
-    _gyroscopeSubscription = gyroscopeEventStream().listen((event) {
-      if (!mounted) return;
-      setState(() {
-        _gyroscope = event;
-        _sensorError = null;
-      });
-      _noDataTimer?.cancel();
-    }, onError: (_) {
-      if (!mounted) return;
-      setState(() {
-        _sensorError = 'Gyroscope not available on this device';
-      });
-    });
-
-    _userAccelerometerSubscription = userAccelerometerEventStream().listen((event) {
-      if (!mounted) return;
-      setState(() {
-        _userAccelerometer = event;
-        _sensorError = null;
-      });
-      _noDataTimer?.cancel();
-    });
-
-    _magnetometerSubscription = magnetometerEventStream().listen((event) {
-      if (!mounted) return;
-      setState(() {
-        _magnetometer = event;
-        _sensorError = null;
-      });
-      _noDataTimer?.cancel();
-    });
   }
 
   @override
   void dispose() {
     _accelerometerSubscription?.cancel();
-    _userAccelerometerSubscription?.cancel();
-    _gyroscopeSubscription?.cancel();
-    _magnetometerSubscription?.cancel();
     _noDataTimer?.cancel();
     super.dispose();
   }
@@ -115,7 +71,7 @@ class _MotionSensorPageState extends State<MotionSensorPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Motion Sensors'),
+        title: const Text('Accelerometer Sensor'),
         centerTitle: true,
       ),
       body: ListView(
@@ -135,33 +91,6 @@ class _MotionSensorPageState extends State<MotionSensorPage> {
             value2: _format(_accelerometer?.y),
             value3: _format(_accelerometer?.z),
             stateText: _motionState(),
-            isDark: isDark,
-          ),
-          const SizedBox(height: 12),
-          _SensorCard(
-            title: 'Gyroscope (rad/s)',
-            value1: _format(_gyroscope?.x),
-            value2: _format(_gyroscope?.y),
-            value3: _format(_gyroscope?.z),
-            stateText: 'Device rotation speed on each axis',
-            isDark: isDark,
-          ),
-          const SizedBox(height: 12),
-          _SensorCard(
-            title: 'User Accelerometer (m/s²)',
-            value1: _format(_userAccelerometer?.x),
-            value2: _format(_userAccelerometer?.y),
-            value3: _format(_userAccelerometer?.z),
-            stateText: 'Linear acceleration without gravity',
-            isDark: isDark,
-          ),
-          const SizedBox(height: 12),
-          _SensorCard(
-            title: 'Magnetometer (uT)',
-            value1: _format(_magnetometer?.x),
-            value2: _format(_magnetometer?.y),
-            value3: _format(_magnetometer?.z),
-            stateText: 'Magnetic field sensor',
             isDark: isDark,
           ),
         ],

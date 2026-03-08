@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/error/failures.dart';
+import 'package:tutorix/features/dashboard/data/repositories/dashboard_repository_impl.dart';
 
 abstract interface class IDashboardRepository {
   Future<Either<Failure, List<Map<String, dynamic>>>> getTutors();
@@ -19,7 +20,5 @@ abstract interface class IDashboardRepository {
 }
 
 final dashboardRepositoryProvider = Provider<IDashboardRepository>((ref) {
-  throw UnimplementedError(
-    'dashboardRepositoryProvider must be overridden with a concrete implementation.',
-  );
+  return ref.read(dashboardRepositoryImplProvider);
 });

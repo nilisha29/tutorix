@@ -6,15 +6,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/app/theme/theme_mode_provider.dart';
 import 'package:tutorix/features/sensors/presentation/pages/dark_mode_sensor_page.dart';
 import 'package:tutorix/features/sensors/presentation/pages/light_sensor_page.dart';
-import 'package:tutorix/features/sensors/presentation/pages/motion_sensor_page.dart';
+import 'package:tutorix/features/sensors/presentation/pages/accelerometer_sensor_page.dart';
 import 'package:tutorix/features/sensors/presentation/pages/sensors_hub_page.dart';
 import 'package:tutorix/features/splash/presentation/pages/splash_page.dart';
 
-class App extends ConsumerWidget {
+class App extends ConsumerStatefulWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<App> createState() => _AppState();
+}
+
+class _AppState extends ConsumerState<App> {
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
@@ -78,9 +83,10 @@ class App extends ConsumerWidget {
         '/sensors': (_) => const SensorsHubPage(),
         '/sensors/light': (_) => const LightSensorPage(),
         '/sensors/dark-mode': (_) => const DarkModeSensorPage(),
-        '/sensors/motion': (_) => const MotionSensorPage(),
+        '/sensors/accelerometer': (_) => const AccelerometerSensorPage(),
+        '/sensors/motion': (_) => const AccelerometerSensorPage(),
       },
-      home: SplashPage(),
+      home: const SplashPage(),
     );
   }
 }

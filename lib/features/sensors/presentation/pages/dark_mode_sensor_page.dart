@@ -18,7 +18,9 @@ class _DarkModeSensorPageState extends ConsumerState<DarkModeSensorPage> {
   Timer? _noDataTimer;
 
   bool _autoMode = true;
-  double _thresholdLux = 25;
+  bool _manualMode = false;
+  double _thresholdLux = 120;
+  static const double _hysteresisLux = 20;
   double? _lux;
   String? _sensorError;
 
@@ -61,9 +63,28 @@ class _DarkModeSensorPageState extends ConsumerState<DarkModeSensorPage> {
     }
   }
 
-  void _applyThemeFromLux(double lux) {
-    final shouldDark = lux <= _thresholdLux;
-    ref.read(themeModeProvider.notifier).toggleDarkMode(shouldDark);
+  Future<void> _applyThemeFromLux(double lux) async {
+    if (lux.isNaN || lux.isInfinite) return;
+    final currentMode = ref.read(themeModeProvider);
+
+    // Use hysteresis to avoid rapid flickering around the threshold.
+    ThemeMode targetMode;
+    if (lux <= _thresholdLux) {
+      targetMode = ThemeMode.dark;
+    } else if (lux >= _thresholdLux + _hysteresisLux) {
+      targetMode = ThemeMode.light;
+    } else {
+      // In the in-between band, keep current explicit mode.
+      if (currentMode == ThemeMode.dark || currentMode == ThemeMode.light) {
+        return;
+      }
+      targetMode = ThemeMode.light;
+    }
+
+    // Important: if current mode is system, we still need to set an explicit
+    // light/dark mode from sensor input.
+    if (currentMode == targetMode) return;
+    await ref.read(themeModeProvider.notifier).setThemeMode(targetMode);
   }
 
   @override
@@ -146,6 +167,15 @@ class _DarkModeSensorPageState extends ConsumerState<DarkModeSensorPage> {
                     }
                   },
                 ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Manual Lux Mode'),
+                  subtitle: const Text('Use if your phone has no light sensor'),
+                  value: _manualMode,
+                  onChanged: (value) {
+                    setState(() => _manualMode = value);
+                  },
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Manual test lux (for devices without light sensor)',
@@ -157,12 +187,17 @@ class _DarkModeSensorPageState extends ConsumerState<DarkModeSensorPage> {
                   max: 300,
                   divisions: 60,
                   label: currentLux.toStringAsFixed(0),
-                  onChanged: (value) {
-                    setState(() => _lux = value);
-                    if (_autoMode) {
-                      _applyThemeFromLux(value);
-                    }
-                  },
+                  onChanged: _manualMode
+                      ? (value) {
+                          setState(() {
+                            _lux = value;
+                            _sensorError = null;
+                          });
+                          if (_autoMode) {
+                            _applyThemeFromLux(value);
+                          }
+                        }
+                      : null,
                 ),
               ],
             ),

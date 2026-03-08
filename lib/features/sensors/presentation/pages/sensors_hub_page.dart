@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:tutorix/features/sensors/presentation/pages/dark_mode_sensor_page.dart';
 import 'package:tutorix/features/sensors/presentation/pages/light_sensor_page.dart';
-import 'package:tutorix/features/sensors/presentation/pages/motion_sensor_page.dart';
+import 'package:tutorix/features/sensors/presentation/pages/accelerometer_sensor_page.dart';
+
 
 class SensorsHubPage extends StatelessWidget {
   const SensorsHubPage({super.key});
@@ -36,13 +37,13 @@ class SensorsHubPage extends StatelessWidget {
           ),
           _SensorNavTile(
             icon: Icons.speed,
-            title: 'Motion Sensors',
-            subtitle: 'Accelerometer + gyroscope readings',
+            title: 'Accelerometer Sensor',
+            subtitle: 'Tilt and movement readings from accelerometer',
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const MotionSensorPage()),
+              MaterialPageRoute(builder: (_) => const AccelerometerSensorPage()),
             ),
-          ),
+          )
         ],
       ),
     );

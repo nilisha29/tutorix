@@ -11,7 +11,7 @@
 
 
     <application
-        android:label="tutorix"
+        android:label="Tutorix"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"

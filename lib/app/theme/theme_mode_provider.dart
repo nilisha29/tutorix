@@ -4,6 +4,12 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:tutorix/core/services/storage/user_session_service.dart';
 
 const _themeModeKey = 'theme_mode';
+const _manualDarkOverrideKey = 'manual_dark_override';
+
+final manualDarkOverrideProvider = StateProvider<bool>((ref) {
+  final prefs = ref.read(sharedPreferencesProvider);
+  return prefs.getBool(_manualDarkOverrideKey) ?? false;
+});
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   ThemeModeNotifier(this._ref) : super(ThemeMode.light) {
@@ -41,6 +47,12 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
 
   Future<void> toggleDarkMode(bool enabled) async {
     await setThemeMode(enabled ? ThemeMode.dark : ThemeMode.light);
+  }
+
+  Future<void> setManualDarkOverride(bool enabled) async {
+    final prefs = _ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_manualDarkOverrideKey, enabled);
+    _ref.read(manualDarkOverrideProvider.notifier).state = enabled;
   }
 }
 

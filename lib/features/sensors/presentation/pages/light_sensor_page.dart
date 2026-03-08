@@ -2,9 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:light/light.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:tutorix/app/theme/theme_mode_provider.dart';
+
+final lightLuxProvider = StateProvider<double?>((ref) => null);
+final lightSensorErrorProvider = StateProvider<String?>((ref) => null);
+final lightSensorCoveredProvider = StateProvider<bool>((ref) => false);
+final lightAutoDarkModeProvider = StateProvider<bool>((ref) => true);
+final lightManualModeProvider = StateProvider<bool>((ref) => false);
 
 class LightSensorPage extends ConsumerStatefulWidget {
   const LightSensorPage({super.key});
@@ -14,18 +21,15 @@ class LightSensorPage extends ConsumerStatefulWidget {
 }
 
 class _LightSensorPageState extends ConsumerState<LightSensorPage> {
-  static const double _darkLuxThreshold = 25;
+  static const double _darkLuxThreshold = 50;
+  static const double _blockedLuxThreshold = 1.5;
   static const double _brightLuxThreshold = 180;
 
   final Light _light = Light();
   StreamSubscription<dynamic>? _lightSubscription;
   Timer? _noDataTimer;
 
-  double? _lux;
-  bool _autoDarkMode = true;
-  String? _lightError;
   String? _brightnessError;
-  bool _manualMode = false;
 
   @override
   void initState() {
@@ -33,10 +37,11 @@ class _LightSensorPageState extends ConsumerState<LightSensorPage> {
 
     _noDataTimer = Timer(const Duration(seconds: 4), () {
       if (!mounted) return;
-      if (_lux == null && _lightError == null) {
-        setState(() {
-          _lightError = 'No light sensor readings received on this device';
-        });
+      final lux = ref.read(lightLuxProvider);
+      final err = ref.read(lightSensorErrorProvider);
+      if (lux == null && err == null) {
+        ref.read(lightSensorErrorProvider.notifier).state =
+            'No light sensor readings received on this device';
       }
     });
 
@@ -44,29 +49,31 @@ class _LightSensorPageState extends ConsumerState<LightSensorPage> {
       _onLightEvent,
       onError: (_) {
         if (!mounted) return;
-        setState(() {
-          _lightError = 'Light sensor not available on this device';
-        });
+        ref.read(lightSensorErrorProvider.notifier).state =
+            'Light sensor not available on this device';
       },
     );
   }
 
   void _onLightEvent(dynamic event) {
-    if (_manualMode) return;
+    if (ref.read(lightManualModeProvider)) return;
+
     final nextLux = event is num ? event.toDouble() : double.tryParse(event.toString());
     if (!mounted) return;
 
-    setState(() {
-      _lux = nextLux;
-      _lightError = null;
-    });
+    ref.read(lightLuxProvider.notifier).state = nextLux;
+    ref.read(lightSensorErrorProvider.notifier).state = null;
+
+    final isCovered = (nextLux ?? 9999) <= _blockedLuxThreshold;
+    ref.read(lightSensorCoveredProvider.notifier).state = isCovered;
+
     _noDataTimer?.cancel();
 
-    if (_autoDarkMode && nextLux != null) {
+    if (ref.read(lightAutoDarkModeProvider) && nextLux != null) {
       final shouldUseDark = nextLux <= _darkLuxThreshold;
-      final isCurrentlyDark = ref.read(themeModeProvider) == ThemeMode.dark;
-      if (shouldUseDark != isCurrentlyDark) {
-        ref.read(themeModeProvider.notifier).toggleDarkMode(shouldUseDark);
+      final targetMode = shouldUseDark ? ThemeMode.dark : ThemeMode.light;
+      if (ref.read(themeModeProvider) != targetMode) {
+        ref.read(themeModeProvider.notifier).setThemeMode(targetMode);
       }
       _applyRecommendedBrightness(nextLux);
     }
@@ -77,9 +84,7 @@ class _LightSensorPageState extends ConsumerState<LightSensorPage> {
     try {
       await ScreenBrightness().setApplicationScreenBrightness(value);
       if (!mounted) return;
-      if (_brightnessError != null) {
-        setState(() => _brightnessError = null);
-      }
+      if (_brightnessError != null) setState(() => _brightnessError = null);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -112,7 +117,12 @@ class _LightSensorPageState extends ConsumerState<LightSensorPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final recommendation = _recommendedBrightness(_lux);
+    final lux = ref.watch(lightLuxProvider);
+    final lightError = ref.watch(lightSensorErrorProvider);
+    final isCovered = ref.watch(lightSensorCoveredProvider);
+    final autoDarkMode = ref.watch(lightAutoDarkModeProvider);
+    final manualMode = ref.watch(lightManualModeProvider);
+    final recommendation = _recommendedBrightness(lux);
 
     return Scaffold(
       appBar: AppBar(
@@ -132,12 +142,15 @@ class _LightSensorPageState extends ConsumerState<LightSensorPage> {
             child: SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Auto Dark Mode'),
-              subtitle: const Text('Uses ambient light like a real phone behavior'),
-              value: _autoDarkMode,
+              subtitle: const Text('Switches theme based on room light level'),
+              value: autoDarkMode,
               onChanged: (value) {
-                setState(() => _autoDarkMode = value);
-                if (value && _lux != null) {
-                  ref.read(themeModeProvider.notifier).toggleDarkMode(_lux! <= _darkLuxThreshold);
+                ref.read(lightAutoDarkModeProvider.notifier).state = value;
+                final currentLux = ref.read(lightLuxProvider);
+                if (value && currentLux != null) {
+                  final shouldUseDark = currentLux <= _darkLuxThreshold;
+                  final targetMode = shouldUseDark ? ThemeMode.dark : ThemeMode.light;
+                  ref.read(themeModeProvider.notifier).setThemeMode(targetMode);
                 }
               },
             ),
@@ -157,26 +170,28 @@ class _LightSensorPageState extends ConsumerState<LightSensorPage> {
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Manual Lux Mode'),
                   subtitle: const Text('Use if your phone has no light sensor'),
-                  value: _manualMode,
+                  value: manualMode,
                   onChanged: (value) {
-                    setState(() => _manualMode = value);
+                    ref.read(lightManualModeProvider.notifier).state = value;
                   },
                 ),
-                if (_manualMode)
+                if (manualMode)
                   Slider(
-                    value: (_lux ?? 60).clamp(0, 300),
+                    value: (lux ?? 60).clamp(0, 300),
                     min: 0,
                     max: 300,
                     divisions: 60,
-                    label: (_lux ?? 60).toStringAsFixed(0),
+                    label: (lux ?? 60).toStringAsFixed(0),
                     onChanged: (value) {
-                      setState(() {
-                        _lux = value;
-                        _lightError = null;
-                      });
-                      if (_autoDarkMode) {
+                      ref.read(lightLuxProvider.notifier).state = value;
+                      ref.read(lightSensorErrorProvider.notifier).state = null;
+                      final covered = value <= _blockedLuxThreshold;
+                      ref.read(lightSensorCoveredProvider.notifier).state = covered;
+
+                      if (autoDarkMode) {
                         final shouldUseDark = value <= _darkLuxThreshold;
-                        ref.read(themeModeProvider.notifier).toggleDarkMode(shouldUseDark);
+                        final targetMode = shouldUseDark ? ThemeMode.dark : ThemeMode.light;
+                        ref.read(themeModeProvider.notifier).setThemeMode(targetMode);
                         _applyRecommendedBrightness(value);
                       }
                     },
@@ -187,8 +202,10 @@ class _LightSensorPageState extends ConsumerState<LightSensorPage> {
           const SizedBox(height: 12),
           _SensorCard(
             title: 'Ambient Light',
-            line1: _lightError ?? (_lux == null ? '--' : '${_lux!.toStringAsFixed(1)} lx'),
-            line2: _brightnessHint(_lux),
+            line1: lightError ?? (lux == null ? '--' : '${lux.toStringAsFixed(1)} lx'),
+            line2: isCovered
+                ? 'Sensor is covered/blocked: treating as dark environment.'
+                : _brightnessHint(lux),
             isDark: isDark,
           ),
           const SizedBox(height: 12),

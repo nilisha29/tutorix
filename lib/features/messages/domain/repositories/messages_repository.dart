@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tutorix/core/error/failures.dart';
+import 'package:tutorix/features/messages/data/repositories/messages_repository_impl.dart';
 
 abstract interface class IMessagesRepository {
   Future<Either<Failure, List<Map<String, dynamic>>>> getConversations();
@@ -12,7 +13,5 @@ abstract interface class IMessagesRepository {
 }
 
 final messagesRepositoryProvider = Provider<IMessagesRepository>((ref) {
-  throw UnimplementedError(
-    'messagesRepositoryProvider must be overridden with a concrete implementation.',
-  );
+  return ref.read(messagesRepositoryImplProvider);
 });

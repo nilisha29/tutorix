@@ -620,8 +620,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     secondary: const Icon(Icons.dark_mode),
                     title: const Text("Dark Mode"),
                     value: themeMode == ThemeMode.dark,
-                    onChanged: (value) {
-                      themeNotifier.toggleDarkMode(value);
+                    onChanged: (value) async {
+                      await themeNotifier.toggleDarkMode(value);
                     },
                   ),
                 ],

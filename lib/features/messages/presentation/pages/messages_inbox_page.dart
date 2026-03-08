@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:tutorix/core/api/api_client.dart';
 import 'package:tutorix/core/api/api_endpoints.dart';
 import 'package:tutorix/core/services/storage/user_session_service.dart';
@@ -15,13 +19,43 @@ class MessagesInboxPage extends ConsumerStatefulWidget {
 }
 
 class _MessagesInboxPageState extends ConsumerState<MessagesInboxPage> {
+  static const double _shakeThreshold = 22;
+  static const Duration _shakeCooldown = Duration(seconds: 2);
+
   bool _loading = false;
   String _query = '';
+  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+  double? _lastMagnitude;
+  DateTime _lastShakeAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
     super.initState();
     _fetchThreads();
+    _startShakeListener();
+  }
+
+  void _startShakeListener() {
+    _accelerometerSubscription = accelerometerEventStream().listen((event) {
+      final magnitude = sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+      final previous = _lastMagnitude;
+      _lastMagnitude = magnitude;
+      if (previous == null) return;
+
+      final delta = (magnitude - previous).abs();
+      final now = DateTime.now();
+      final cooldownPassed = now.difference(_lastShakeAt) > _shakeCooldown;
+
+      if (delta >= _shakeThreshold && cooldownPassed && !_loading) {
+        _lastShakeAt = now;
+        _fetchThreads();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Shake detected: reloading messages')),
+          );
+        }
+      }
+    });
   }
 
   Future<void> _fetchThreads() async {
@@ -157,6 +191,12 @@ class _MessagesInboxPageState extends ConsumerState<MessagesInboxPage> {
     if (diff.inHours < 1) return '${diff.inMinutes}m';
     if (diff.inDays < 1) return '${diff.inHours}h';
     return '${diff.inDays}d';
+  }
+
+  @override
+  void dispose() {
+    _accelerometerSubscription?.cancel();
+    super.dispose();
   }
 
   @override
